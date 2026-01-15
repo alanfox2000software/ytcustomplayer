@@ -64,7 +64,7 @@
 
     #controls {
       position: absolute;
-      bottom: 20px;                    /* ← 改成下方 */
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.65);
@@ -163,10 +163,11 @@
 
     <!-- 主要區域 -->
     <main id="main">
-      <!-- 中央下方控制列（6個按鈕，自動隱藏） -->
+      <!-- 中央下方控制列（現在有7個按鈕） -->
       <div id="controls">
         <input type="file" id="load-json" accept=".json" style="display:none" />
         <button onclick="document.getElementById('load-json').click()">載入 JSON 清單</button>
+        <button onclick="addVideoManually()">加入影片</button>
         <button onclick="savePlaylist()">儲存目前清單</button>
         <button onclick="clearPlaylist()">清除清單</button>
         <button onclick="playAll()">全部播放</button>
@@ -195,16 +196,41 @@
       clearTimeout(hideTimer);
       hideTimer = setTimeout(() => {
         controls.classList.add("hidden");
-      }, 3000); // 3秒後隱藏，可自行調整
+      }, 3000);
     }
 
-    // 滑鼠移動、點擊都顯示並重置計時器
     document.addEventListener("mousemove", showControls);
     document.addEventListener("click", showControls);
 
     function onYouTubeIframeAPIReady() {
       console.log("YouTube IFrame API Ready");
-      showControls(); // 初始顯示
+      showControls();
+    }
+
+    // 手動加入影片
+    function addVideoManually() {
+      const title = prompt("請輸入影片標題：");
+      if (!title) return;
+
+      const url = prompt("請輸入 YouTube 網址（watch?v= 或 youtu.be）：");
+      if (!url) return;
+
+      const videoId = extractId(url);
+      if (!videoId) {
+        alert("無法從網址解析出有效的 YouTube 影片 ID，請檢查網址格式");
+        return;
+      }
+
+      // 檢查是否已經存在
+      if (currentPlaylist.some(item => item.id === videoId)) {
+        alert("此影片已經在播放清單中");
+        return;
+      }
+
+      currentPlaylist.push({ title, id: videoId });
+      renderPlaylist();
+      alert(`已加入：「${title}」`);
+      showControls();
     }
 
     // 載入儲存的播放清單
