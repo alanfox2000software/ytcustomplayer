@@ -64,7 +64,7 @@
 
     #controls {
       position: absolute;
-      top: 15px;
+      bottom: 20px;                    /* ← 改成下方 */
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.65);
@@ -163,7 +163,7 @@
 
     <!-- 主要區域 -->
     <main id="main">
-      <!-- 中央控制列（6個按鈕，自動隱藏） -->
+      <!-- 中央下方控制列（6個按鈕，自動隱藏） -->
       <div id="controls">
         <input type="file" id="load-json" accept=".json" style="display:none" />
         <button onclick="document.getElementById('load-json').click()">載入 JSON 清單</button>
@@ -195,7 +195,7 @@
       clearTimeout(hideTimer);
       hideTimer = setTimeout(() => {
         controls.classList.add("hidden");
-      }, 3000); // 3秒後隱藏，可自行調整秒數
+      }, 3000); // 3秒後隱藏，可自行調整
     }
 
     // 滑鼠移動、點擊都顯示並重置計時器
@@ -204,8 +204,7 @@
 
     function onYouTubeIframeAPIReady() {
       console.log("YouTube IFrame API Ready");
-      // 頁面載入完成後先顯示控制列一段時間
-      showControls();
+      showControls(); // 初始顯示
     }
 
     // 載入儲存的播放清單
@@ -289,7 +288,7 @@
 
     function playAll() {
       Object.values(players).forEach(p => p?.playVideo?.());
-      showControls(); // 操作時強制顯示
+      showControls();
     }
 
     function pauseAll() {
