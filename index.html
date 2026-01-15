@@ -7,6 +7,51 @@
         <!-- Bootstrap 5 CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
+		.container {
+			display: flex;
+			height: 100vh;
+		}
+		#sidebar {
+			width: 280px;
+			background: #1e1e1e;
+			color: white;
+			padding: 15px;
+			overflow-y: auto;
+			border-right: 1px solid #333;
+		}
+		#main-grid {
+			flex: 1;
+			padding: 10px;
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+			gap: 10px;
+			overflow-y: auto;
+		}
+		.playlist-item {
+			padding: 10px;
+			cursor: pointer;
+			background: #2d2d2d;
+			margin-bottom: 8px;
+			border-radius: 4px;
+		}
+		.playlist-item:hover,
+		.playlist-item.active {
+			background: #4a4a4a;
+		}
+		.sidebar-controls {
+			margin-top: 20px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+		button {
+			padding: 8px;
+			background: #065fd4;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
         .tooltip-text {
             position: absolute;
             right: 100%;
@@ -53,29 +98,27 @@
         </style>
     </head>
     <body class="bg-dark">
-        <a
-            href="https://github.com/SeanGau/yt_multiviewer"
-            target="_blank"
-            class="github-corner"
-            aria-label="View source on GitHub"
-        >
-            <svg
-                width="80"
-                height="80"
-                viewBox="0 0 250 250"
-                style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;"
-                aria-hidden="true"
-            >
-                <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
-                <path
-                    d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
-                    fill="currentColor"
-                    style="transform-origin: 130px 106px;"
-                    class="octo-arm"
-                ></path>
-                <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
-            </svg>
-        </a>
+<div class="container">
+    <!-- 左側邊欄 -->
+    <aside id="sidebar">
+      <h2>播放清單</h2>
+      <div id="playlist-items"></div>
+      
+      <!-- 操作按鈕 -->
+      <div class="sidebar-controls">
+        <input type="file" id="load-json" accept=".json" style="display:none;">
+        <button onclick="document.getElementById('load-json').click()">載入 JSON</button>
+        <button onclick="savePlaylist()">儲存目前清單</button>
+        <button onclick="clearPlaylist()">清除清單</button>
+      </div>
+    </aside>
+
+    <!-- 主要影片網格區域（原來的內容） -->
+    <main id="main-grid">
+      <!-- 原有的影片容器們會在這裡動態產生 -->
+    </main>
+  </div>
+
         <div class="container-fluid py-4 px-4">
             <div class="row justify-content-center">
                 <div class="col-12">
@@ -160,6 +203,140 @@
         <!-- Bootstrap 5 JS Bundle -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script>
+		// ==================== 新增功能：播放清單管理 ====================
+
+let currentPlaylist = []; // [{title, id, url}, ...]
+
+// 從 localStorage 載入上次儲存的清單（頁面載入時）
+function loadSavedPlaylist() {
+  const saved = localStorage.getItem('customPlaylist');
+  if (saved) {
+    currentPlaylist = JSON.parse(saved);
+    renderPlaylist();
+    loadVideosFromPlaylist(); // 自動載入上次清單的影片
+  }
+}
+
+// 顯示側邊欄清單項目
+function renderPlaylist() {
+  const container = document.getElementById('playlist-items');
+  container.innerHTML = '';
+  
+  currentPlaylist.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'playlist-item';
+    div.textContent = item.title || `影片 ${index + 1}`;
+    div.onclick = () => {
+      // 點擊只播放單一影片（或你想要的行為）
+      loadSingleVideo(item.id);
+      highlightActiveItem(index);
+    };
+    container.appendChild(div);
+  });
+}
+
+function highlightActiveItem(index) {
+  document.querySelectorAll('.playlist-item').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+}
+
+// 從 JSON 檔案載入
+document.getElementById('load-json').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    try {
+      const data = JSON.parse(event.target.result);
+      if (!Array.isArray(data)) throw new Error("必須是陣列格式");
+      
+      currentPlaylist = data.map(item => ({
+        title: item.title || "未命名",
+        id: item.id || extractVideoId(item.url || ''),
+        url: item.url || ''
+      })).filter(item => item.id); // 過濾掉無效項目
+      
+      renderPlaylist();
+      loadVideosFromPlaylist(); // 載入所有影片到網格
+      alert('播放清單載入成功！');
+    } catch(err) {
+      alert('JSON 格式錯誤：' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+
+// 儲存到 localStorage
+function savePlaylist() {
+  if (currentPlaylist.length === 0) {
+    alert('目前沒有清單可儲存');
+    return;
+  }
+  localStorage.setItem('customPlaylist', JSON.stringify(currentPlaylist));
+  alert('已儲存到瀏覽器本地！（localStorage）');
+}
+
+function clearPlaylist() {
+  if (confirm('確定要清除播放清單？')) {
+    currentPlaylist = [];
+    localStorage.removeItem('customPlaylist');
+    renderPlaylist();
+    // 清空網格（呼叫原有清空函式或自己實作）
+    document.getElementById('main-grid').innerHTML = '';
+  }
+}
+
+// 從目前清單載入所有影片到網格（取代原有 ?videos= 邏輯）
+function loadVideosFromPlaylist() {
+  const ids = currentPlaylist.map(item => item.id).join(',');
+  if (ids) {
+    // 呼叫原有的載入函式，或直接用相同方式建立 iframe
+    // 假設你原有程式有個 createPlayers(ids) 之類的函式
+    // 這裡示範最簡單做法：
+    const grid = document.getElementById('main-grid');
+    grid.innerHTML = '';
+    currentPlaylist.forEach(item => {
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube.com/embed/${item.id}?autoplay=1&mute=1`;
+      iframe.allow = "autoplay; encrypted-media";
+      iframe.frameBorder = "0";
+      iframe.allowFullscreen = true;
+      grid.appendChild(iframe);
+    });
+  }
+}
+
+// 從單一 id 載入（當點擊側邊欄時，可選擇只播一個）
+function loadSingleVideo(id) {
+  // 可選擇：清空網格只放一個，或保持多個只靜音其他
+  // 這裡示範簡單版：只播單一
+  const grid = document.getElementById('main-grid');
+  grid.innerHTML = '';
+  const iframe = document.createElement('iframe');
+  iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+  iframe.style.width = '100%';
+  iframe.style.height = '100vh';
+  iframe.allow = "autoplay; encrypted-media";
+  iframe.frameBorder = "0";
+  iframe.allowFullscreen = true;
+  grid.appendChild(iframe);
+}
+
+// 輔助：從 url 抽出 video id
+function extractVideoId(url) {
+  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  return (url.match(regex) || [])[1] || '';
+}
+
+// 頁面載入時執行
+window.addEventListener('load', () => {
+  loadSavedPlaylist();
+  // 如果原本有處理 ?videos= 的程式碼，可保留，作為 fallback
+});
+
+
         async function getVideoIds() {
             const urlParams = new URLSearchParams(window.location.search);
             
