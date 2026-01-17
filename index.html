@@ -123,6 +123,7 @@
       border-radius: 6px;
       overflow: hidden;
       aspect-ratio: 16 / 9;
+      z-index: 10; /* 確保 wrapper 在層級之上 */
     }
 
     .video-wrapper iframe {
@@ -146,7 +147,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 5;
+      z-index: 9999; /* 最高層級，確保永遠在 iframe 上方 */
     }
 
     .close-btn:hover {
@@ -193,7 +194,7 @@
     let currentPlaylist = [];
     let players = {};
     let isMuted = true;
-    let selectedAudioDeviceId = null; // 目前選擇的音頻輸出裝置 ID
+    let selectedAudioDeviceId = null;
 
     const controls = document.getElementById("controls");
     let hideTimer = null;
@@ -201,205 +202,4 @@
     function showControls() {
       controls.classList.remove("hidden");
       clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => {
-        controls.classList.add("hidden");
-      }, 3000);
-    }
-
-    document.addEventListener("mousemove", showControls);
-    document.addEventListener("click", showControls);
-
-    function onYouTubeIframeAPIReady() {
-      console.log("YouTube IFrame API Ready");
-      showControls();
-    }
-
-    // 選擇音頻輸出裝置
-    async function selectAudioOutput() {
-      try {
-        // 先取得麥克風權限（瀏覽器要求 enumerateDevices 前通常需要某種媒體權限）
-        await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {});
-
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
-
-        if (audioOutputs.length <= 1) {
-          alert("目前只有一個音頻輸出裝置，或瀏覽器不支援選擇輸出裝置。");
-          return;
-        }
-
-        let options = "可用的音頻輸出裝置：\n\n";
-        audioOutputs.forEach((device, index) => {
-          options += `${index + 1}. ${device.label || `裝置 ${index + 1}`}\n`;
-        });
-
-        const choice = prompt(options + "\n\n請輸入想使用的裝置編號（1~" + audioOutputs.length + "）：");
-        if (!choice) return;
-
-        const index = parseInt(choice) - 1;
-        if (isNaN(index) || index < 0 || index >= audioOutputs.length) {
-          alert("無效的選擇");
-          return;
-        }
-
-        selectedAudioDeviceId = audioOutputs[index].deviceId;
-        alert(`已選擇輸出裝置：${audioOutputs[index].label || "未命名裝置"}`);
-
-        // 提示使用者：只有新加入的影片會套用此設定
-        alert("設定完成！\n之後新加入的影片將自動使用此音頻輸出裝置。\n（已存在的影片不會自動變更）");
-
-        showControls();
-      } catch (err) {
-        alert("無法取得音頻裝置列表：\n" + err.message + "\n\n可能原因：瀏覽器未允許麥克風權限，或不支援 audiooutput 選擇");
-      }
-    }
-
-    // 當建立新的 YT.Player 時，嘗試設定音頻輸出裝置
-    function addVideoToGrid(videoId) {
-      if (players[videoId]) return;
-
-      document.getElementById("no-video-msg").style.display = "none";
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "video-wrapper";
-      wrapper.id = `wrapper-${videoId}`;
-
-      const closeBtn = document.createElement("button");
-      closeBtn.className = "close-btn";
-      closeBtn.textContent = "×";
-      closeBtn.onclick = () => removeVideo(videoId);
-      wrapper.appendChild(closeBtn);
-
-      const playerDiv = document.createElement("div");
-      playerDiv.id = `player-${videoId}`;
-      wrapper.appendChild(playerDiv);
-
-      document.getElementById("grid").appendChild(wrapper);
-
-      const playerVars = {
-        autoplay: 1,
-        mute: isMuted ? 1 : 0,
-        rel: 0,
-        modestbranding: 1
-      };
-
-      const p = new YT.Player(`player-${videoId}`, {
-        height: "100%",
-        width: "100%",
-        videoId: videoId,
-        playerVars: playerVars,
-        events: {
-          onReady: async (e) => {
-            e.target.playVideo();
-
-            // 嘗試設定音頻輸出裝置（僅新建立的 player 有效）
-            if (selectedAudioDeviceId && e.target.setSinkId) {
-              try {
-                await e.target.getIframe().contentWindow.navigator.mediaDevices.getUserMedia({ audio: true });
-                await e.target.getIframe().contentWindow.navigator.mediaDevices.sinkId(selectedAudioDeviceId);
-                console.log("音頻輸出裝置已設定為：" + selectedAudioDeviceId);
-              } catch (err) {
-                console.warn("無法設定音頻輸出裝置：", err);
-              }
-            }
-          }
-        }
-      });
-
-      players[videoId] = p;
-    }
-
-    // 以下為其他原有功能（略過重複部分，僅列出必要）
-    function loadJsonFromUrl() {
-      const defaultUrl = "https://raw.githubusercontent.com/alanfox2000software/ytcustomplayer/refs/heads/main/playlist.json";
-      const url = prompt("請輸入 JSON 檔案的完整網址（支援 CORS 的公開連結）：", defaultUrl);
-      if (!url) return;
-
-      fetch(url)
-        .then(response => {
-          if (!response.ok) throw new Error(`HTTP 錯誤：${response.status}`);
-          return response.json();
-        })
-        .then(data => {
-          currentPlaylist = data
-            .map(item => ({
-              title: item.title || "未命名",
-              id: item.id || extractId(item.url || ""),
-            }))
-            .filter(item => item.id);
-          renderPlaylist();
-          alert(`從 URL 成功載入 ${currentPlaylist.length} 個項目`);
-          showControls();
-        })
-        .catch(err => alert("載入失敗：" + err.message));
-    }
-
-    function addVideoManually() {
-      const title = prompt("請輸入影片標題：");
-      if (!title) return;
-      const url = prompt("請輸入 YouTube 網址：");
-      if (!url) return;
-
-      const videoId = extractId(url);
-      if (!videoId) return alert("無效的 YouTube 網址");
-
-      currentPlaylist.push({ title, id: videoId });
-      renderPlaylist();
-      showControls();
-    }
-
-    function loadSavedPlaylist() {
-      const saved = localStorage.getItem("ytCustomPlaylist");
-      if (saved) {
-        currentPlaylist = JSON.parse(saved);
-        renderPlaylist();
-      }
-    }
-
-    function renderPlaylist() {
-      const container = document.getElementById("playlist-items");
-      container.innerHTML = "";
-      currentPlaylist.forEach((item, i) => {
-        const div = document.createElement("div");
-        div.className = "playlist-item";
-        div.textContent = item.title || `影片 ${i + 1}`;
-        div.dataset.id = item.id;
-        div.onclick = () => addVideoToGrid(item.id);
-        container.appendChild(div);
-      });
-    }
-
-    function savePlaylist() {
-      if (currentPlaylist.length === 0) return alert("沒有清單可儲存");
-      localStorage.setItem("ytCustomPlaylist", JSON.stringify(currentPlaylist));
-      alert("已儲存至瀏覽器");
-      showControls();
-    }
-
-    function clearPlaylist() {
-      if (!confirm("確定清除播放清單？")) return;
-      currentPlaylist = [];
-      localStorage.removeItem("ytCustomPlaylist");
-      renderPlaylist();
-      showControls();
-    }
-
-    function playAll() { /* ... */ showControls(); }
-    function pauseAll() { /* ... */ showControls(); }
-    function toggleMuteAll() { /* ... */ showControls(); }
-
-    function extractId(url) {
-      const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
-      return m ? m[1] : "";
-    }
-
-    function removeVideo(videoId) {
-      // ... 原有移除邏輯 ...
-    }
-
-    window.addEventListener("load", () => {
-      loadSavedPlaylist();
-    });
-  </script>
-</body>
-</html>
+      hideTimer =
