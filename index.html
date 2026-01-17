@@ -25,12 +25,40 @@
     }
 
     #sidebar {
-      width: 240px;                  /* 側邊欄更窄 */
+      width: 240px;
       background: #181818;
       border-right: 1px solid #333;
-      padding: 12px 8px;             /* 內距縮小 */
+      padding: 12px 8px;
       overflow-y: auto;
-      font-size: 0.9rem;             /* 全域字體稍小 */
+      font-size: 0.9rem;
+
+      /* Firefox 滾動條樣式 */
+      scrollbar-width: thin;
+      scrollbar-color: #555 #181818;
+    }
+
+    /* Chrome / Edge / Safari / 新版 Opera 滾動條樣式 */
+    #sidebar::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #sidebar::-webkit-scrollbar-track {
+      background: #181818;
+      border-radius: 4px;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
+      border: 2px solid #181818; /* 製造內縮邊框感，更精緻 */
+    }
+
+    #sidebar::-webkit-scrollbar-thumb:hover {
+      background: #777;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb:active {
+      background: #999;
     }
 
     #sidebar h2 {
@@ -40,8 +68,8 @@
     }
 
     .playlist-item {
-      padding: 6px 10px;             /* 高度大幅壓縮 */
-      margin-bottom: 4px;            /* 項目間距變小 */
+      padding: 6px 10px;
+      margin-bottom: 4px;
       background: #282828;
       border-radius: 4px;
       cursor: pointer;
@@ -49,7 +77,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 0.85rem;            /* 文字更小 */
+      font-size: 0.85rem;
       line-height: 1.2;
     }
 
