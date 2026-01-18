@@ -20,7 +20,7 @@
 ## 線上體驗
 
 - 原版：https://alanfox2000software.github.io/ytcustomplayer/
-- 你的 Fork：https://你的使用者名稱.github.io/ytcustomplayer/
+- 你的 Fork：https://{username}.github.io/ytcustomplayer/
 
 （Fork 後自動部署到 GitHub Pages 即可擁有自己的版本，所有功能都會自動適配你的儲存庫）
 
@@ -44,3 +44,29 @@
 ## 網址參數格式
 
 支援直接在網址後加上影片 ID 清單：
+
+https://{username}.github.io/ytcustomplayer/?videos=VIDEO_ID1,VIDEO_ID2,VIDEO_ID3
+
+範例：
+https://alanfox2000software.github.io/ytcustomplayer/?videos=dQw4w9WgXcQ,jNQXAC9IVRw,9bZkp7q19f0
+
+## 播放清單 JSON 格式（自訂清單用）
+
+```json
+[
+  {
+    "playlist": "我的最愛 2025",
+    "items": [
+      {
+        "title": "Rick Astley - Never Gonna Give You Up",
+        "id": "dQw4w9WgXcQ"
+      },
+      {
+        "title": "Charlie bit my finger - again !",
+        "id": "_OBlgSz8sSM"
+      }
+    ]
+  }
+]
+
+可放置在儲存庫的 playlist/ 資料夾內，檔名任意（建議用英文或數字），副檔名必須是 .json。
