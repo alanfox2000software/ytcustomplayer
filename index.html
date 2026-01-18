@@ -412,10 +412,9 @@
       <div id="online-files-list" style="max-height:45vh; overflow-y:auto;"></div>
 
       <div style="margin-top:24px; padding-top:16px; border-top:1px solid #444;">
-        <h3 style="margin-bottom:12px;">手動加入單一影片</h3>
-        <input type="text" id="manual-title" placeholder="影片標題" style="width:100%; padding:10px; margin-bottom:12px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
-        <input type="text" id="manual-id" placeholder="YouTube ID 或完整網址" style="width:100%; padding:10px; margin-bottom:16px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
-        <button onclick="addManualVideoToCurrentTab()" class="small-btn">加入到目前分頁</button>
+        <h3 style="margin-bottom:12px;">加入播放清單 JSON</h3>
+        <input type="text" id="json-url" placeholder="輸入 JSON 完整網址 (支援 GitHub raw 等)" style="width:100%; padding:10px; margin-bottom:16px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
+        <button onclick="addJsonFromUrl()" class="small-btn">加入到目前分頁</button>
       </div>
     </div>
   </div>
@@ -457,7 +456,7 @@
     let currentPlaylists = [];
     let currentTabIndex = -1;
 
-    // 自動偵測 GitHub 相關網址（修正雙 https 問題）
+    // 自動偵測 GitHub 相關網址
     function getGitHubRepoApiUrl() {
       const currentUrl = window.location.href;
       const githubMatch = currentUrl.match(/github\.com\/([^/]+)\/([^/]+)/i);
@@ -642,10 +641,9 @@
     }
 
     async function loadOnlinePlaylist(filename) {
-      // 確保 URL 乾淨無誤
       let cleanUrl = `${RAW_BASE}playlist/${filename}`;
-      cleanUrl = cleanUrl.replace(/([^:]\/)\/+/g, "$1"); // 移除多餘斜線
-      cleanUrl = cleanUrl.replace(/^https?:\/+/, 'https://'); // 確保單一 protocol
+      cleanUrl = cleanUrl.replace(/([^:]\/)\/+/g, "$1");
+      cleanUrl = cleanUrl.replace(/^https?:\/+/, 'https://');
 
       console.log("嘗試載入 JSON:", cleanUrl);
 
@@ -668,7 +666,7 @@
         }
 
         const text = await res.text();
-        console.log("JSON 原始內容前 100 字:", text.substring(0, 100));
+        console.log("JSON 內容前 100 字:", text.substring(0, 100));
 
         let data;
         try {
@@ -690,6 +688,64 @@
 
         showMessage(`${msg}：${filename}`, "error");
         console.error("載入 JSON 失敗:", e, "\nURL:", cleanUrl);
+      }
+    }
+
+    // 新增功能：從任意 JSON URL 加入播放清單
+    async function addJsonFromUrl() {
+      const urlInput = document.getElementById("json-url");
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        showMessage("請輸入 JSON 完整網址", "error");
+        return;
+      }
+
+      if (!url.startsWith("https://")) {
+        showMessage("網址必須以 https:// 開頭", "error");
+        return;
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const res = await fetch(url, {
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache',
+          redirect: 'follow',
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+        }
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          throw new Error("JSON 解析失敗：" + parseErr.message);
+        }
+
+        addNewPlaylistGroup(data);
+        document.getElementById("online-playlist-overlay").style.display = "none";
+        showMessage("已成功從網址加入播放清單", "success");
+        urlInput.value = ""; // 清空輸入欄
+
+      } catch (e) {
+        let msg = "加入失敗";
+        if (e.name === 'AbortError') msg = "載入超時（10秒）";
+        else if (e.message.includes("404")) msg = "找不到該 JSON 檔案";
+        else if (e.message.includes("CORS")) msg = "CORS 錯誤（該網址不支援跨域請求）";
+        else msg = e.message;
+
+        showMessage(`${msg}`, "error");
+        console.error("從 URL 加入 JSON 失敗:", e, "\nURL:", url);
       }
     }
 
