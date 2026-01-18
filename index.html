@@ -57,11 +57,11 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.9rem;
-      transition: background 0.2s;
+      transition: background 0.25s ease;
     }
 
     button:hover {
-      background: #0a73e6;
+      background: #a81c1c; /* Twilight 風格暗紅 */
     }
 
     #add-btn {
@@ -81,10 +81,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s;
+      transition: background 0.25s ease, transform 0.2s;
     }
 
     #add-btn:hover {
+      background: #a81c1c;
       transform: scale(1.1);
     }
 
@@ -133,7 +134,7 @@
     .tab-remove:hover,
     .remove-item:hover,
     .close-overlay:hover {
-      background: #c00;
+      background: #a81c1c; /* 與藍色按鈕 hover 一致的 Twilight 暗紅 */
       color: white;
       opacity: 1;
       transform: scale(1.1);
@@ -160,7 +161,8 @@
       background: rgba(0,0,0,0.85);
       z-index: 300;
       display: none;
-      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .overlay-content {
@@ -168,10 +170,10 @@
       max-width: 900px;
       background: #181818;
       border-radius: 12px;
-      margin: 40px auto;
       padding: 24px;
-      max-height: 82vh;
+      max-height: 90vh;
       overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
     }
 
     .overlay-header {
@@ -260,11 +262,16 @@
       padding: 10px 16px;
       cursor: pointer;
       transition: 0.2s;
+      background: #065fd4; /* 分頁也使用藍色基底 */
+      color: white;
     }
 
     .tab.active {
-      background: #065fd4;
-      color: white;
+      background: #0848a3; /* 更深的藍表示啟動 */
+    }
+
+    .tab:hover {
+      background: #a81c1c; /* hover 變 Twilight 暗紅 */
     }
 
     .tab-content {
@@ -303,21 +310,21 @@
       bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.8);
-      padding: 12px 24px;
+      background: rgba(20,20,20,0.9); /* 非常接近背景的深灰 */
+      color: #cccccc;
+      padding: 10px 20px;
       border-radius: 30px;
       z-index: 500;
       display: none;
       opacity: 0;
-      transition: opacity 0.3s ease;
-      font-size: 0.95rem;
+      transition: opacity 0.4s ease;
+      font-size: 0.85rem; /* 字體更小一點 */
       max-width: 80%;
       text-align: center;
+      border: 1px solid rgba(80,80,80,0.5);
     }
 
     #message-bar.show { display: block; opacity: 1; }
-    #message-bar.success { background: rgba(0,128,0,0.8); }
-    #message-bar.error   { background: rgba(255,0,0,0.8); }
   </style>
 </head>
 <body>
@@ -385,38 +392,39 @@
     </div>
   </div>
 
-  <!-- 新增分頁輸入 -->
+  <!-- 新增分頁輸入（置中） -->
   <div id="new-tab-overlay" class="overlay" style="z-index:400;">
-    <div style="background:#181818; padding:30px; border-radius:12px; width:90%; max-width:420px; text-align:center;">
+    <div id="new-tab-box">
       <h3>建立新分頁</h3>
       <input type="text" id="new-tab-name" placeholder="請輸入分頁名稱" style="width:100%; padding:12px; margin:20px 0; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
-      <div style="display:flex; gap:12px; justify-content:center;">
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:20px;">
         <button onclick="document.getElementById('new-tab-overlay').style.display='none'" class="small-btn">取消</button>
         <button onclick="createNewTab()" class="small-btn">建立</button>
       </div>
     </div>
   </div>
 
-  <!-- 加入單一影片 overlay -->
+  <!-- 加入單一影片 overlay（置中） -->
   <div id="add-video-overlay" class="overlay" style="z-index:400;">
-    <div style="background:#181818; padding:30px; border-radius:12px; width:90%; max-width:500px;">
+    <div id="add-video-box">
       <h3 style="margin-bottom:20px;">加入新影片到目前分頁</h3>
       <input type="text" id="new-title" placeholder="影片標題" style="width:100%; padding:10px; margin-bottom:12px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
       <input type="text" id="new-id" placeholder="YouTube ID 或完整網址" style="width:100%; padding:10px; margin-bottom:20px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
-      <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
         <button onclick="document.getElementById('add-video-overlay').style.display='none'" class="small-btn">取消</button>
         <button onclick="addVideoToCurrentTab()" class="small-btn">加入</button>
       </div>
     </div>
   </div>
 
-  <!-- 瞬時訊息 -->
+  <!-- 瞬時訊息（低調深灰） -->
   <div id="message-bar"></div>
 
   <input type="file" id="local-json-input" accept=".json" style="display:none" />
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
+    // 以下為原有完整 JavaScript 內容（已包含所有功能）
     let players = {};
     let isMuted = true;
     let currentPlaylists = [];
@@ -511,7 +519,6 @@
       showControls();
     }
 
-    // 搜尋功能
     document.getElementById("search-input").addEventListener("input", doSearch);
 
     function doSearch() {
@@ -545,7 +552,6 @@
       });
     }
 
-    // 線上播放清單
     async function showOnlinePlaylistOverlay() {
       const container = document.getElementById("online-files-list");
       container.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">正在從 GitHub 載入播放清單...</div>';
@@ -605,7 +611,6 @@
       }
     }
 
-    // 手動加入單一影片（從線上）
     function addManualVideoToCurrentTab() {
       const title = document.getElementById("manual-title").value.trim();
       let input = document.getElementById("manual-id").value.trim();
@@ -707,7 +712,64 @@
       showMessage(`已加入：「${title}」`, "success");
     }
 
-    // 修正重點：點擊標題加入影片（事件綁定更穩定）
+    document.getElementById("local-json-input").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = event => {
+        try {
+          const data = JSON.parse(event.target.result);
+          addNewPlaylistGroup(data);
+          showMessage("本地檔案載入成功", "success");
+        } catch(err) {
+          showMessage("JSON 格式錯誤：" + err.message, "error");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    function loadLocalJson() {
+      document.getElementById("local-json-input").click();
+    }
+
+    function addNewPlaylistGroup(data) {
+      let groups = [];
+
+      if (Array.isArray(data)) {
+        if (data[0]?.playlist && Array.isArray(data[0].items)) {
+          groups = data;
+        } else {
+          groups = [{
+            playlist: "新載入清單 " + new Date().toLocaleDateString(),
+            items: data.filter(i => i.id).map(i => ({title: i.title || "未命名", id: i.id}))
+          }];
+        }
+      }
+
+      if (groups.length === 0) {
+        showMessage("無有效資料", "error");
+        return;
+      }
+
+      const existingNames = new Set(currentPlaylists.map(p => p.playlist));
+      const newGroups = [];
+
+      groups.forEach(g => {
+        let name = g.playlist;
+        let counter = 1;
+        while (existingNames.has(name)) {
+          name = `${g.playlist} (${counter++})`;
+        }
+        newGroups.push({ ...g, playlist: name });
+        existingNames.add(name);
+      });
+
+      currentPlaylists.push(...newGroups);
+      renderTabs();
+      showMessage(`已加入 ${newGroups.length} 個分頁（避免重名）`, "success");
+    }
+
     function renderTabs() {
       const tabButtons = document.getElementById("tab-buttons");
       const tabContents = document.getElementById("tab-contents");
@@ -758,7 +820,7 @@
           titleSpan.textContent = item.title;
           titleSpan.title = item.title;
           titleSpan.onclick = (e) => {
-            e.stopPropagation(); // 避免觸發其他事件
+            e.stopPropagation();
             addVideoToGrid(item.id, item.title);
           };
 
@@ -835,66 +897,6 @@
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-    }
-
-    function loadLocalJson() {
-      document.getElementById("local-json-input").click();
-    }
-
-    document.getElementById("local-json-input").addEventListener("change", e => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = event => {
-        try {
-          const data = JSON.parse(event.target.result);
-          addNewPlaylistGroup(data);
-          showMessage("本地檔案載入成功", "success");
-        } catch(err) {
-          showMessage("JSON 格式錯誤：" + err.message, "error");
-        }
-      };
-      reader.readAsText(file);
-    });
-
-    // 修正重點：避免重複分頁名稱
-    function addNewPlaylistGroup(data) {
-      let groups = [];
-
-      if (Array.isArray(data)) {
-        if (data[0]?.playlist && Array.isArray(data[0].items)) {
-          groups = data;
-        } else {
-          groups = [{
-            playlist: "新載入清單 " + new Date().toLocaleDateString(),
-            items: data.filter(i => i.id).map(i => ({title: i.title || "未命名", id: i.id}))
-          }];
-        }
-      }
-
-      if (groups.length === 0) {
-        showMessage("無有效資料", "error");
-        return;
-      }
-
-      // 檢查重複名稱
-      const existingNames = new Set(currentPlaylists.map(p => p.playlist));
-      const newGroups = [];
-
-      groups.forEach(g => {
-        let name = g.playlist;
-        let counter = 1;
-        while (existingNames.has(name)) {
-          name = `${g.playlist} (${counter++})`;
-        }
-        newGroups.push({ ...g, playlist: name });
-        existingNames.add(name);
-      });
-
-      currentPlaylists.push(...newGroups);
-      renderTabs();
-      showMessage(`已加入 ${newGroups.length} 個分頁（避免重名）`, "success");
     }
   </script>
 </body>
