@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YT 多格播放器 - 進階版 (多分頁播放清單)</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: Arial, Helvetica, sans-serif;
@@ -44,10 +40,7 @@
       transition: opacity 0.5s;
     }
 
-    #controls.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+    #controls.hidden { opacity: 0; pointer-events: none; }
 
     button {
       padding: 8px 14px;
@@ -357,6 +350,7 @@
       <button onclick="pauseAll()">全部暫停</button>
       <button onclick="toggleMuteAll()">靜音/取消靜音</button>
       <button onclick="clearAllVideos()">清除所有影片</button>
+      <button onclick="copyCurrentVideosUrl()">複製目前影片設定</button>
     </div>
 
     <div id="grid"></div>
@@ -452,33 +446,48 @@
     let currentPlaylists = [];
     let currentTabIndex = -1;
 
-    // 自動偵測當前 GitHub 儲存庫，動態產生 API 網址
-    function getGitHubRepoApiUrl() {
+    // 自動偵測目前 GitHub Pages 網址基底，用於分享連結
+    function getPagesBaseUrl() {
       const currentUrl = window.location.href;
 
-      // 匹配 GitHub 頁面網址模式
+      // 匹配 GitHub 儲存庫網址模式
       const githubMatch = currentUrl.match(/github\.com\/([^/]+)\/([^/]+)/i);
 
       if (githubMatch && githubMatch.length === 3) {
         const username = githubMatch[1];
-        const repo = githubMatch[2].split('#')[0].split('?')[0]; // 移除錨點與參數
+        const repo = githubMatch[2].split('#')[0].split('?')[0];
+        return `https://${username}.github.io/${repo}/`;
+      }
+
+      // 若無法偵測（本地測試等），使用預設 alanfox2000software 的 Pages
+      console.warn("無法偵測 GitHub Pages 網址，使用預設 alanfox2000software.github.io/ytcustomplayer/");
+      return "https://alanfox2000software.github.io/ytcustomplayer/";
+    }
+
+    // 自動偵測 GitHub API（用於載入線上清單）
+    function getGitHubRepoApiUrl() {
+      const currentUrl = window.location.href;
+      const githubMatch = currentUrl.match(/github\.com\/([^/]+)\/([^/]+)/i);
+
+      if (githubMatch && githubMatch.length === 3) {
+        const username = githubMatch[1];
+        const repo = githubMatch[2].split('#')[0].split('?')[0];
         return `https://api.github.com/repos/${username}/${repo}/git/trees/main?recursive=1`;
       }
 
-      // 若無法偵測，使用預設 alanfox2000software/ytcustomplayer
-      console.warn("無法自動偵測 GitHub 儲存庫，使用預設 alanfox2000software/ytcustomplayer");
       return "https://api.github.com/repos/alanfox2000software/ytcustomplayer/git/trees/main?recursive=1";
     }
 
-    // 動態設定 API 網址與 RAW 基底
+    const PAGES_BASE_URL = getPagesBaseUrl();
     const GITHUB_TREE_URL = getGitHubRepoApiUrl();
     const RAW_BASE = GITHUB_TREE_URL.replace(
       /api\.github\.com\/repos\/([^/]+)\/([^/]+)\/.*/,
       "https://raw.githubusercontent.com/$1/$2/main/"
     );
 
-    console.log("自動偵測到的 API 網址:", GITHUB_TREE_URL);
-    console.log("自動偵測到的 RAW 基底網址:", RAW_BASE);
+    console.log("分享連結基底:", PAGES_BASE_URL);
+    console.log("API 網址:", GITHUB_TREE_URL);
+    console.log("RAW 基底:", RAW_BASE);
 
     const controls = document.getElementById("controls");
     let hideTimer = null;
@@ -508,6 +517,38 @@
 
     function onYouTubeIframeAPIReady() {
       console.log("YouTube IFrame API Ready");
+      loadVideosFromUrl();
+    }
+
+    // 從網址參數載入影片
+    function loadVideosFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const videosParam = params.get("videos");
+
+      if (videosParam) {
+        const videoIds = videosParam.split(",").map(id => id.trim()).filter(id => id.length === 11);
+        if (videoIds.length > 0) {
+          videoIds.forEach(id => addVideoToGrid(id, "從網址載入"));
+          showMessage(`已從網址載入 ${videoIds.length} 部影片`, "success");
+        }
+      }
+    }
+
+    // 複製目前所有影片的分享連結（使用動態 Pages 基底）
+    function copyCurrentVideosUrl() {
+      const videoIds = Object.keys(players);
+      if (videoIds.length === 0) {
+        showMessage("目前沒有任何影片", "error");
+        return;
+      }
+
+      const shareUrl = `${PAGES_BASE_URL}?videos=${videoIds.join(",")}`;
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showMessage("已複製目前影片設定連結到剪貼簿", "success");
+      }).catch(err => {
+        showMessage("複製失敗：" + err.message, "error");
+      });
     }
 
     function addVideoToGrid(videoId, title = "") {
