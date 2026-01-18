@@ -111,7 +111,6 @@
       border: none;
     }
 
-    /* 所有 × 按鈕統一樣式 - 低調版 */
     .close-btn,
     .tab-remove,
     .remove-item,
@@ -140,34 +139,9 @@
       transform: scale(1.1);
     }
 
-    /* 影片格子關閉按鈕 */
-    .close-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 24px;
-      height: 24px;
-      z-index: 10;
-    }
-
-    /* 分頁移除按鈕 */
-    .tab-remove {
-      width: 22px;
-      height: 22px;
-      margin-left: 4px;
-      margin-right: 6px;
-    }
-
-    /* 清單內項目移除按鈕 */
-    .remove-item {
-      width: 20px;
-      height: 20px;
-      margin-left: 8px;
-    }
-
-    .playlist-item:hover .remove-item {
-      opacity: 0.9;
-    }
+    .close-btn { width: 24px; height: 24px; position: absolute; top: 8px; right: 8px; z-index: 10; }
+    .tab-remove { width: 22px; height: 22px; margin-left: 4px; margin-right: 6px; }
+    .remove-item { width: 20px; height: 20px; }
 
     #no-video-msg {
       color: #777;
@@ -180,8 +154,7 @@
       height: 100%;
     }
 
-    /* Overlay */
-    #playlist-overlay {
+    .overlay {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.85);
@@ -190,7 +163,7 @@
       flex-direction: column;
     }
 
-    #overlay-content {
+    .overlay-content {
       width: 90%;
       max-width: 900px;
       background: #181818;
@@ -214,7 +187,8 @@
       font-size: 18px;
     }
 
-    #search-input {
+    #search-input,
+    #online-search {
       width: 100%;
       padding: 12px;
       font-size: 1rem;
@@ -225,28 +199,45 @@
       margin-bottom: 16px;
     }
 
-    #search-results {
+    #search-results,
+    #online-files-list {
       margin: 16px 0;
-      max-height: 200px;
+      max-height: 50vh;
       overflow-y: auto;
-      border-top: 1px solid #333;
-      padding-top: 8px;
     }
 
-    .search-item, .playlist-item {
+    .search-item,
+    .playlist-item,
+    .online-file-item {
       padding: 10px 12px;
       background: #282828;
       margin: 4px 0;
       border-radius: 6px;
       cursor: pointer;
       transition: 0.15s;
+    }
+
+    .search-item:hover,
+    .playlist-item:hover,
+    .online-file-item:hover {
+      background: #383838;
+    }
+
+    .playlist-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      min-width: 0;
     }
 
-    .search-item:hover, .playlist-item:hover {
-      background: #383838;
+    .playlist-item span {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 12px;
+      cursor: pointer;
     }
 
     .tab-container {
@@ -284,28 +275,14 @@
       scrollbar-width: thin;
     }
 
-    .tab-content::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .tab-content::-webkit-scrollbar-track {
-      background: #181818;
-      border-radius: 4px;
-    }
-
-    .tab-content::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 4px;
-      border: 2px solid #181818;
-    }
-
-    .tab-content::-webkit-scrollbar-thumb:hover {
-      background: #777;
-    }
-
     .tab-content.active {
       display: block;
     }
+
+    .tab-content::-webkit-scrollbar { width: 8px; }
+    .tab-content::-webkit-scrollbar-track { background: #181818; border-radius: 4px; }
+    .tab-content::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; border: 2px solid #181818; }
+    .tab-content::-webkit-scrollbar-thumb:hover { background: #777; }
 
     .load-buttons {
       display: flex;
@@ -321,7 +298,6 @@
       font-size: 0.85rem;
     }
 
-    /* 瞬時訊息樣式 */
     #message-bar {
       position: fixed;
       bottom: 100px;
@@ -339,18 +315,9 @@
       text-align: center;
     }
 
-    #message-bar.show {
-      display: block;
-      opacity: 1;
-    }
-
-    #message-bar.success {
-      background: rgba(0,128,0,0.8);
-    }
-
-    #message-bar.error {
-      background: rgba(255,0,0,0.8);
-    }
+    #message-bar.show { display: block; opacity: 1; }
+    #message-bar.success { background: rgba(0,128,0,0.8); }
+    #message-bar.error   { background: rgba(255,0,0,0.8); }
   </style>
 </head>
 <body>
@@ -368,9 +335,9 @@
     <button id="add-btn">+</button>
   </div>
 
-  <!-- 播放清單 Overlay -->
-  <div id="playlist-overlay">
-    <div id="overlay-content">
+  <!-- 主播放清單 Overlay -->
+  <div id="playlist-overlay" class="overlay">
+    <div class="overlay-content">
       <div class="overlay-header">
         <h2>播放清單管理</h2>
         <button class="close-overlay" onclick="closeOverlay()">×</button>
@@ -386,16 +353,52 @@
 
       <div class="load-buttons">
         <button onclick="loadLocalJson()">從本地加入</button>
-        <button onclick="loadJsonFromUrl()">從URL加入</button>
+        <button onclick="showOnlinePlaylistOverlay()">從線上加入</button>
         <button onclick="saveCurrentTab()">儲存此分頁</button>
         <button onclick="saveAllTabs()">儲存所有分頁</button>
+        <button onclick="showNewTabOverlay()">新增分頁</button>
         <button onclick="showAddVideoOverlay()">加入影片到此分頁</button>
       </div>
     </div>
   </div>
 
+  <!-- 線上播放清單 Overlay -->
+  <div id="online-playlist-overlay" class="overlay" style="z-index:350;">
+    <div class="overlay-content">
+      <div class="overlay-header">
+        <h2>線上播放清單</h2>
+        <button class="close-overlay" onclick="document.getElementById('online-playlist-overlay').style.display='none'">×</button>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <input type="text" id="online-search" placeholder="搜尋線上清單名稱..." />
+      </div>
+
+      <div id="online-files-list" style="max-height:50vh; overflow-y:auto;"></div>
+
+      <div style="margin-top:24px; padding-top:16px; border-top:1px solid #444;">
+        <h3 style="margin-bottom:12px;">手動加入單一影片</h3>
+        <input type="text" id="manual-title" placeholder="影片標題" style="width:100%; padding:10px; margin-bottom:12px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
+        <input type="text" id="manual-id" placeholder="YouTube ID 或完整網址" style="width:100%; padding:10px; margin-bottom:16px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
+        <button onclick="addManualVideoToCurrentTab()" class="small-btn">加入到目前分頁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增分頁輸入 -->
+  <div id="new-tab-overlay" class="overlay" style="z-index:400;">
+    <div style="background:#181818; padding:30px; border-radius:12px; width:90%; max-width:420px; text-align:center;">
+      <h3>建立新分頁</h3>
+      <input type="text" id="new-tab-name" placeholder="請輸入分頁名稱" style="width:100%; padding:12px; margin:20px 0; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button onclick="document.getElementById('new-tab-overlay').style.display='none'" class="small-btn">取消</button>
+        <button onclick="createNewTab()" class="small-btn">建立</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 加入單一影片 overlay -->
-  <div id="add-video-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:400; align-items:center; justify-content:center;">
+  <div id="add-video-overlay" class="overlay" style="z-index:400;">
     <div style="background:#181818; padding:30px; border-radius:12px; width:90%; max-width:500px;">
       <h3 style="margin-bottom:20px;">加入新影片到目前分頁</h3>
       <input type="text" id="new-title" placeholder="影片標題" style="width:100%; padding:10px; margin-bottom:12px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
@@ -407,7 +410,7 @@
     </div>
   </div>
 
-  <!-- 瞬時訊息條 -->
+  <!-- 瞬時訊息 -->
   <div id="message-bar"></div>
 
   <input type="file" id="local-json-input" accept=".json" style="display:none" />
@@ -418,6 +421,9 @@
     let isMuted = true;
     let currentPlaylists = [];
     let currentTabIndex = -1;
+
+    const GITHUB_TREE_URL = "https://api.github.com/repos/alanfox2000software/ytcustomplayer/git/trees/main?recursive=1";
+    const RAW_BASE = "https://raw.githubusercontent.com/alanfox2000software/ytcustomplayer/main/";
 
     const controls = document.getElementById("controls");
     let hideTimer = null;
@@ -431,16 +437,16 @@
     document.addEventListener("mousemove", showControls);
     document.addEventListener("click", showControls);
 
-    const overlay = document.getElementById("playlist-overlay");
+    const playlistOverlay = document.getElementById("playlist-overlay");
     const addBtn = document.getElementById("add-btn");
 
     addBtn.onclick = () => {
-      overlay.style.display = "flex";
+      playlistOverlay.style.display = "flex";
       renderTabs();
     };
 
     function closeOverlay() {
-      overlay.style.display = "none";
+      playlistOverlay.style.display = "none";
       document.getElementById("search-input").value = "";
       document.getElementById("search-results").innerHTML = "";
     }
@@ -505,6 +511,7 @@
       showControls();
     }
 
+    // 搜尋功能
     document.getElementById("search-input").addEventListener("input", doSearch);
 
     function doSearch() {
@@ -538,6 +545,169 @@
       });
     }
 
+    // 線上播放清單
+    async function showOnlinePlaylistOverlay() {
+      const container = document.getElementById("online-files-list");
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">正在從 GitHub 載入播放清單...</div>';
+
+      document.getElementById("online-playlist-overlay").style.display = "flex";
+
+      try {
+        const response = await fetch(GITHUB_TREE_URL);
+        if (!response.ok) throw new Error(`GitHub API 錯誤: ${response.status}`);
+
+        const data = await response.json();
+        const tree = data.tree || [];
+
+        const jsonFiles = tree
+          .filter(item => item.path.startsWith("playlist/") && item.path.endsWith(".json"))
+          .map(item => item.path.replace("playlist/", ""));
+
+        container.innerHTML = "";
+
+        if (jsonFiles.length === 0) {
+          container.innerHTML = '<div style="padding:20px;color:#888;text-align:center;">目前 playlist 資料夾沒有 .json 檔案</div>';
+          return;
+        }
+
+        jsonFiles.sort().forEach(filename => {
+          const item = document.createElement("div");
+          item.className = "online-file-item";
+          item.textContent = filename;
+          item.onclick = () => loadOnlinePlaylist(filename);
+          container.appendChild(item);
+        });
+
+        document.getElementById("online-search").oninput = function() {
+          const keyword = this.value.trim().toLowerCase();
+          Array.from(container.children).forEach(el => {
+            el.style.display = el.textContent.toLowerCase().includes(keyword) ? "" : "none";
+          });
+        };
+
+      } catch (err) {
+        container.innerHTML = `<div style="padding:20px;color:#ff6666;text-align:center;">載入失敗: ${err.message}</div>`;
+      }
+    }
+
+    async function loadOnlinePlaylist(filename) {
+      const url = `${RAW_BASE}playlist/${filename}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        addNewPlaylistGroup(data);
+        document.getElementById("online-playlist-overlay").style.display = "none";
+        showMessage(`已從線上加入：${filename}`, "success");
+      } catch(e) {
+        showMessage(`載入 ${filename} 失敗：${e.message}`, "error");
+      }
+    }
+
+    // 手動加入單一影片（從線上）
+    function addManualVideoToCurrentTab() {
+      const title = document.getElementById("manual-title").value.trim();
+      let input = document.getElementById("manual-id").value.trim();
+
+      if (!title || !input) {
+        showMessage("標題與 ID/網址皆為必填", "error");
+        return;
+      }
+
+      let videoId = input;
+      if (input.includes("youtube.com") || input.includes("youtu.be")) {
+        const m = input.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+        videoId = m ? m[1] : "";
+      }
+
+      if (!videoId || videoId.length !== 11) {
+        showMessage("無法解析有效的 YouTube 影片 ID", "error");
+        return;
+      }
+
+      if (currentTabIndex < 0) {
+        showMessage("請先選擇一個分頁", "error");
+        return;
+      }
+
+      if (currentPlaylists[currentTabIndex].items.some(i => i.id === videoId)) {
+        showMessage("此影片 ID 已存在於目前分頁", "error");
+        return;
+      }
+
+      currentPlaylists[currentTabIndex].items.push({ title, id: videoId });
+      document.getElementById("online-playlist-overlay").style.display = "none";
+      renderTabs();
+      showMessage(`已加入：「${title}」`, "success");
+    }
+
+    function showNewTabOverlay() {
+      document.getElementById("new-tab-overlay").style.display = "flex";
+      document.getElementById("new-tab-name").value = "";
+      document.getElementById("new-tab-name").focus();
+    }
+
+    function createNewTab() {
+      const name = document.getElementById("new-tab-name").value.trim();
+      if (!name) {
+        showMessage("請輸入分頁名稱", "error");
+        return;
+      }
+
+      currentPlaylists.push({
+        playlist: name,
+        items: []
+      });
+
+      document.getElementById("new-tab-overlay").style.display = "none";
+      renderTabs();
+      switchTab(currentPlaylists.length - 1);
+      showMessage(`已新增分頁：「${name}」`, "success");
+    }
+
+    function showAddVideoOverlay() {
+      if (currentTabIndex < 0) {
+        showMessage("請先選擇一個分頁", "error");
+        return;
+      }
+      document.getElementById("add-video-overlay").style.display = "flex";
+      document.getElementById("new-title").value = "";
+      document.getElementById("new-id").value = "";
+    }
+
+    function addVideoToCurrentTab() {
+      const title = document.getElementById("new-title").value.trim();
+      let input = document.getElementById("new-id").value.trim();
+
+      if (!title || !input) {
+        showMessage("標題與 ID/網址皆為必填", "error");
+        return;
+      }
+
+      let videoId = input;
+      if (input.includes("youtube.com") || input.includes("youtu.be")) {
+        const m = input.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+        videoId = m ? m[1] : "";
+      }
+
+      if (!videoId || videoId.length !== 11) {
+        showMessage("無法解析有效的 YouTube 影片 ID", "error");
+        return;
+      }
+
+      if (currentPlaylists[currentTabIndex].items.some(i => i.id === videoId)) {
+        showMessage("此影片 ID 已存在於目前分頁", "error");
+        return;
+      }
+
+      currentPlaylists[currentTabIndex].items.push({ title, id: videoId });
+      document.getElementById("add-video-overlay").style.display = "none";
+      renderTabs();
+      showMessage(`已加入：「${title}」`, "success");
+    }
+
+    // 修正重點：點擊標題加入影片（事件綁定更穩定）
     function renderTabs() {
       const tabButtons = document.getElementById("tab-buttons");
       const tabContents = document.getElementById("tab-contents");
@@ -586,9 +756,11 @@
 
           const titleSpan = document.createElement("span");
           titleSpan.textContent = item.title;
-          titleSpan.style.flex = "1";
           titleSpan.title = item.title;
-          titleSpan.onclick = () => addVideoToGrid(item.id, item.title);
+          titleSpan.onclick = (e) => {
+            e.stopPropagation(); // 避免觸發其他事件
+            addVideoToGrid(item.id, item.title);
+          };
 
           const removeBtn = document.createElement("button");
           removeBtn.className = "remove-item";
@@ -665,45 +837,8 @@
       URL.revokeObjectURL(url);
     }
 
-    function showAddVideoOverlay() {
-      if (currentTabIndex < 0) {
-        showMessage("請先選擇一個分頁", "error");
-        return;
-      }
-      document.getElementById("add-video-overlay").style.display = "flex";
-      document.getElementById("new-title").value = "";
-      document.getElementById("new-id").value = "";
-    }
-
-    function addVideoToCurrentTab() {
-      const title = document.getElementById("new-title").value.trim();
-      let input = document.getElementById("new-id").value.trim();
-
-      if (!title || !input) {
-        showMessage("標題與 ID/網址皆為必填", "error");
-        return;
-      }
-
-      let videoId = input;
-      if (input.includes("youtube.com") || input.includes("youtu.be")) {
-        const m = input.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
-        videoId = m ? m[1] : "";
-      }
-
-      if (!videoId || videoId.length !== 11) {
-        showMessage("無法解析有效的 YouTube 影片 ID", "error");
-        return;
-      }
-
-      if (currentPlaylists[currentTabIndex].items.some(i => i.id === videoId)) {
-        showMessage("此影片 ID 已存在於目前分頁", "error");
-        return;
-      }
-
-      currentPlaylists[currentTabIndex].items.push({ title, id: videoId });
-      document.getElementById("add-video-overlay").style.display = "none";
-      renderTabs();
-      showMessage(`已加入：「${title}」`, "success");
+    function loadLocalJson() {
+      document.getElementById("local-json-input").click();
     }
 
     document.getElementById("local-json-input").addEventListener("change", e => {
@@ -723,25 +858,7 @@
       reader.readAsText(file);
     });
 
-    function loadLocalJson() {
-      document.getElementById("local-json-input").click();
-    }
-
-    async function loadJsonFromUrl() {
-      const url = prompt("請輸入 JSON 完整網址：", "https://raw.githubusercontent.com/alanfox2000software/ytcustomplayer/refs/heads/main/playlist.json");
-      if (!url) return;
-
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        addNewPlaylistGroup(data);
-        showMessage("URL 載入成功", "success");
-      } catch(e) {
-        showMessage("載入失敗：" + e.message, "error");
-      }
-    }
-
+    // 修正重點：避免重複分頁名稱
     function addNewPlaylistGroup(data) {
       let groups = [];
 
@@ -761,9 +878,23 @@
         return;
       }
 
-      currentPlaylists.push(...groups);
+      // 檢查重複名稱
+      const existingNames = new Set(currentPlaylists.map(p => p.playlist));
+      const newGroups = [];
+
+      groups.forEach(g => {
+        let name = g.playlist;
+        let counter = 1;
+        while (existingNames.has(name)) {
+          name = `${g.playlist} (${counter++})`;
+        }
+        newGroups.push({ ...g, playlist: name });
+        existingNames.add(name);
+      });
+
+      currentPlaylists.push(...newGroups);
       renderTabs();
-      showMessage(`已加入 ${groups.length} 個分頁`, "success");
+      showMessage(`已加入 ${newGroups.length} 個分頁（避免重名）`, "success");
     }
   </script>
 </body>
