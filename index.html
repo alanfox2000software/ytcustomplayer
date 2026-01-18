@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YT Custom Player - 多格播放清單版 (Compact)</title>
+  <title>YT 多格播放器 - 進階版 (多分頁播放清單)</title>
   <style>
     * {
       margin: 0;
@@ -19,78 +19,8 @@
       overflow: hidden;
     }
 
-    .container {
-      display: flex;
-      height: 100vh;
-    }
-
-    #sidebar {
-      width: 240px;
-      background: #181818;
-      border-right: 1px solid #333;
-      padding: 12px 8px;
-      overflow-y: auto;
-      font-size: 0.9rem;
-
-      /* Firefox 滾動條樣式 */
-      scrollbar-width: thin;
-      scrollbar-color: #555 #181818;
-    }
-
-    /* Chrome / Edge / Safari / 新版 Opera 滾動條樣式 */
-    #sidebar::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    #sidebar::-webkit-scrollbar-track {
-      background: #181818;
-      border-radius: 4px;
-    }
-
-    #sidebar::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 4px;
-      border: 2px solid #181818; /* 製造內縮邊框感，更精緻 */
-    }
-
-    #sidebar::-webkit-scrollbar-thumb:hover {
-      background: #777;
-    }
-
-    #sidebar::-webkit-scrollbar-thumb:active {
-      background: #999;
-    }
-
-    #sidebar h2 {
-      margin-bottom: 10px;
-      color: white;
-      font-size: 1.1rem;
-    }
-
-    .playlist-item {
-      padding: 6px 10px;
-      margin-bottom: 4px;
-      background: #282828;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: 0.2s;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 0.85rem;
-      line-height: 1.2;
-    }
-
-    .playlist-item:hover {
-      background: #383838;
-    }
-
-    .playlist-item:active {
-      background: #065fd4;
-    }
-
     #main {
-      flex: 1;
+      height: 100vh;
       background: #000;
       position: relative;
       display: flex;
@@ -107,13 +37,11 @@
       border-radius: 30px;
       z-index: 100;
       display: flex;
+      gap: 12px;
       flex-wrap: wrap;
-      gap: 10px;
       justify-content: center;
-      max-width: 90%;
-      opacity: 1;
-      transition: opacity 0.6s ease;
-      pointer-events: auto;
+      max-width: 92%;
+      transition: opacity 0.5s;
     }
 
     #controls.hidden {
@@ -122,33 +50,57 @@
     }
 
     button {
-      padding: 8px 12px;
+      padding: 8px 14px;
       background: #065fd4;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
-      white-space: nowrap;
       font-size: 0.9rem;
+      transition: background 0.2s;
     }
 
     button:hover {
       background: #0a73e6;
     }
 
+    #add-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #c00;
+      color: white;
+      font-size: 2.4rem;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    #add-btn:hover {
+      transform: scale(1.1);
+    }
+
     #grid {
       flex: 1;
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 10px;
-      padding: 15px;
+      gap: 12px;
+      padding: 16px;
       overflow-y: auto;
     }
 
     .video-wrapper {
       position: relative;
       background: #111;
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
       aspect-ratio: 16 / 9;
     }
@@ -159,67 +111,313 @@
       border: none;
     }
 
-    .close-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(0,0,0,0.7);
-      color: white;
+    /* 所有 × 按鈕統一樣式 - 低調版 */
+    .close-btn,
+    .tab-remove,
+    .remove-item,
+    .close-overlay {
+      background: rgba(30,30,30,0.65);
+      color: #aaaaaa;
       border: none;
       border-radius: 50%;
-      width: 28px;
-      height: 28px;
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 5;
+      transition: all 0.2s ease;
+      opacity: 0.7;
     }
 
-    .close-btn:hover {
+    .close-btn:hover,
+    .tab-remove:hover,
+    .remove-item:hover,
+    .close-overlay:hover {
       background: #c00;
+      color: white;
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    /* 影片格子關閉按鈕 */
+    .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      z-index: 10;
+    }
+
+    /* 分頁移除按鈕 */
+    .tab-remove {
+      width: 22px;
+      height: 22px;
+      margin-left: 4px;
+      margin-right: 6px;
+    }
+
+    /* 清單內項目移除按鈕 */
+    .remove-item {
+      width: 20px;
+      height: 20px;
+      margin-left: 8px;
+    }
+
+    .playlist-item:hover .remove-item {
+      opacity: 0.9;
     }
 
     #no-video-msg {
       color: #777;
-      font-size: 1.4rem;
+      font-size: 1.6rem;
       text-align: center;
       margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    /* Overlay */
+    #playlist-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 300;
+      display: none;
+      flex-direction: column;
+    }
+
+    #overlay-content {
+      width: 90%;
+      max-width: 900px;
+      background: #181818;
+      border-radius: 12px;
+      margin: 40px auto;
+      padding: 24px;
+      max-height: 82vh;
+      overflow-y: auto;
+    }
+
+    .overlay-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .close-overlay {
+      width: 26px;
+      height: 26px;
+      font-size: 18px;
+    }
+
+    #search-input {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #222;
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    #search-results {
+      margin: 16px 0;
+      max-height: 200px;
+      overflow-y: auto;
+      border-top: 1px solid #333;
+      padding-top: 8px;
+    }
+
+    .search-item, .playlist-item {
+      padding: 10px 12px;
+      background: #282828;
+      margin: 4px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-item:hover, .playlist-item:hover {
+      background: #383838;
+    }
+
+    .tab-container {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #444;
+    }
+
+    .tab-wrapper {
+      display: flex;
+      align-items: center;
+      background: #282828;
+      border-radius: 6px 6px 0 0;
+      overflow: hidden;
+    }
+
+    .tab {
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .tab.active {
+      background: #065fd4;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      max-height: 45vh;
+      overflow-y: auto;
+      padding-right: 8px;
+      scrollbar-width: thin;
+    }
+
+    .tab-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .tab-content::-webkit-scrollbar-track {
+      background: #181818;
+      border-radius: 4px;
+    }
+
+    .tab-content::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
+      border: 2px solid #181818;
+    }
+
+    .tab-content::-webkit-scrollbar-thumb:hover {
+      background: #777;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .load-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #444;
+    }
+
+    .small-btn {
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+
+    /* 瞬時訊息樣式 */
+    #message-bar {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      padding: 12px 24px;
+      border-radius: 30px;
+      z-index: 500;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      font-size: 0.95rem;
+      max-width: 80%;
+      text-align: center;
+    }
+
+    #message-bar.show {
+      display: block;
+      opacity: 1;
+    }
+
+    #message-bar.success {
+      background: rgba(0,128,0,0.8);
+    }
+
+    #message-bar.error {
+      background: rgba(255,0,0,0.8);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <aside id="sidebar">
-      <h2>播放清單</h2>
-      <div id="playlist-items"></div>
-    </aside>
+  <div id="main">
+    <div id="controls">
+      <button onclick="playAll()">全部播放</button>
+      <button onclick="pauseAll()">全部暫停</button>
+      <button onclick="toggleMuteAll()">靜音/取消靜音</button>
+      <button onclick="clearAllVideos()">清除所有影片</button>
+    </div>
 
-    <main id="main">
-      <div id="controls">
-        <input type="file" id="load-json" accept=".json" style="display:none" />
-        <button onclick="document.getElementById('load-json').click()">載入 JSON 檔案</button>
-        <button onclick="loadJsonFromUrl()">載入 JSON URL</button>
-        <button onclick="addVideoManually()">加入影片</button>
-        <button onclick="savePlaylist()">儲存目前清單</button>
-        <button onclick="clearPlaylist()">清除清單</button>
-        <button onclick="playAll()">全部播放</button>
-        <button onclick="pauseAll()">全部暫停</button>
-        <button onclick="toggleMuteAll()">靜音/取消靜音</button>
+    <div id="grid"></div>
+    <div id="no-video-msg">點擊右下角 + 按鈕開啟播放清單</div>
+
+    <button id="add-btn">+</button>
+  </div>
+
+  <!-- 播放清單 Overlay -->
+  <div id="playlist-overlay">
+    <div id="overlay-content">
+      <div class="overlay-header">
+        <h2>播放清單管理</h2>
+        <button class="close-overlay" onclick="closeOverlay()">×</button>
       </div>
 
-      <div id="grid"></div>
-      <div id="no-video-msg">請從左側播放清單選擇影片加入播放</div>
-    </main>
+      <input type="text" id="search-input" placeholder="搜尋所有播放清單的影片標題..." />
+
+      <div id="search-results"></div>
+
+      <div class="tab-container" id="tab-buttons"></div>
+
+      <div id="tab-contents"></div>
+
+      <div class="load-buttons">
+        <button onclick="loadLocalJson()">從本地加入</button>
+        <button onclick="loadJsonFromUrl()">從URL加入</button>
+        <button onclick="saveCurrentTab()">儲存此分頁</button>
+        <button onclick="saveAllTabs()">儲存所有分頁</button>
+        <button onclick="showAddVideoOverlay()">加入影片到此分頁</button>
+      </div>
+    </div>
   </div>
+
+  <!-- 加入單一影片 overlay -->
+  <div id="add-video-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:400; align-items:center; justify-content:center;">
+    <div style="background:#181818; padding:30px; border-radius:12px; width:90%; max-width:500px;">
+      <h3 style="margin-bottom:20px;">加入新影片到目前分頁</h3>
+      <input type="text" id="new-title" placeholder="影片標題" style="width:100%; padding:10px; margin-bottom:12px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
+      <input type="text" id="new-id" placeholder="YouTube ID 或完整網址" style="width:100%; padding:10px; margin-bottom:20px; background:#222; border:1px solid #444; color:white; border-radius:6px;" />
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button onclick="document.getElementById('add-video-overlay').style.display='none'" class="small-btn">取消</button>
+        <button onclick="addVideoToCurrentTab()" class="small-btn">加入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 瞬時訊息條 -->
+  <div id="message-bar"></div>
+
+  <input type="file" id="local-json-input" accept=".json" style="display:none" />
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    // 全域變數
-    let currentPlaylist = [];
     let players = {};
     let isMuted = true;
+    let currentPlaylists = [];
+    let currentTabIndex = -1;
 
     const controls = document.getElementById("controls");
     let hideTimer = null;
@@ -227,94 +425,31 @@
     function showControls() {
       controls.classList.remove("hidden");
       clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => {
-        controls.classList.add("hidden");
-      }, 3000);
+      hideTimer = setTimeout(() => controls.classList.add("hidden"), 4000);
     }
 
     document.addEventListener("mousemove", showControls);
     document.addEventListener("click", showControls);
 
+    const overlay = document.getElementById("playlist-overlay");
+    const addBtn = document.getElementById("add-btn");
+
+    addBtn.onclick = () => {
+      overlay.style.display = "flex";
+      renderTabs();
+    };
+
+    function closeOverlay() {
+      overlay.style.display = "none";
+      document.getElementById("search-input").value = "";
+      document.getElementById("search-results").innerHTML = "";
+    }
+
     function onYouTubeIframeAPIReady() {
       console.log("YouTube IFrame API Ready");
-      showControls();
     }
 
-    async function loadJsonFromUrl() {
-      const defaultUrl = "https://raw.githubusercontent.com/alanfox2000software/ytcustomplayer/refs/heads/main/playlist.json";
-      const url = prompt("請輸入 JSON 檔案的完整網址（支援 CORS 的公開連結）：", defaultUrl);
-      if (!url) return;
-
-      try {
-        showControls();
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP 錯誤：${response.status}`);
-
-        const data = await response.json();
-
-        currentPlaylist = data
-          .map(item => ({
-            title: item.title || "未命名",
-            id: item.id || extractId(item.url || ""),
-          }))
-          .filter(item => item.id);
-
-        renderPlaylist();
-        alert(`從 URL 成功載入 ${currentPlaylist.length} 個項目`);
-      } catch (err) {
-        alert("載入失敗：\n" + err.message + "\n\n可能原因：\n1. 網址錯誤\n2. 該網站未開啟 CORS\n3. JSON 格式不正確");
-      }
-    }
-
-    function addVideoManually() {
-      const title = prompt("請輸入影片標題：");
-      if (!title) return;
-
-      const url = prompt("請輸入 YouTube 網址：");
-      if (!url) return;
-
-      const videoId = extractId(url);
-      if (!videoId) {
-        alert("無法解析出有效的 YouTube 影片 ID");
-        return;
-      }
-
-      if (currentPlaylist.some(item => item.id === videoId)) {
-        alert("此影片已經在播放清單中");
-        return;
-      }
-
-      currentPlaylist.push({ title, id: videoId });
-      renderPlaylist();
-      alert(`已加入：「${title}」`);
-      showControls();
-    }
-
-    function loadSavedPlaylist() {
-      const saved = localStorage.getItem("ytCustomPlaylist");
-      if (saved) {
-        try {
-          currentPlaylist = JSON.parse(saved);
-          renderPlaylist();
-        } catch (e) {}
-      }
-    }
-
-    function renderPlaylist() {
-      const container = document.getElementById("playlist-items");
-      container.innerHTML = "";
-
-      currentPlaylist.forEach((item, i) => {
-        const div = document.createElement("div");
-        div.className = "playlist-item";
-        div.textContent = item.title || `影片 ${i + 1}`;
-        div.dataset.id = item.id;
-        div.onclick = () => addVideoToGrid(item.id);
-        container.appendChild(div);
-      });
-    }
-
-    function addVideoToGrid(videoId) {
+    function addVideoToGrid(videoId, title = "") {
       if (players[videoId]) return;
 
       document.getElementById("no-video-msg").style.display = "none";
@@ -339,15 +474,8 @@
         height: "100%",
         width: "100%",
         videoId: videoId,
-        playerVars: {
-          autoplay: 1,
-          mute: isMuted ? 1 : 0,
-          rel: 0,
-          modestbranding: 1,
-        },
-        events: {
-          onReady: (e) => e.target.playVideo(),
-        },
+        playerVars: { autoplay: 1, mute: isMuted ? 1 : 0, rel: 0, modestbranding: 1, controls: 1 },
+        events: { onReady: (e) => e.target.playVideo() }
       });
 
       players[videoId] = p;
@@ -356,85 +484,287 @@
     function removeVideo(videoId) {
       const wrapper = document.getElementById(`wrapper-${videoId}`);
       if (wrapper) {
-        if (players[videoId]) {
-          players[videoId].destroy();
-          delete players[videoId];
-        }
+        players[videoId]?.destroy();
+        delete players[videoId];
         wrapper.remove();
-
         if (Object.keys(players).length === 0) {
           document.getElementById("no-video-msg").style.display = "flex";
         }
       }
     }
 
-    function playAll() {
-      Object.values(players).forEach(p => p?.playVideo?.());
-      showControls();
-    }
-
-    function pauseAll() {
-      Object.values(players).forEach(p => p?.pauseVideo?.());
-      showControls();
-    }
-
+    function playAll()    { Object.values(players).forEach(p => p?.playVideo?.()); showControls(); }
+    function pauseAll()   { Object.values(players).forEach(p => p?.pauseVideo?.()); showControls(); }
     function toggleMuteAll() {
       isMuted = !isMuted;
-      Object.values(players).forEach(p => {
-        if (isMuted) p?.mute?.();
-        else p?.unMute?.();
-      });
+      Object.values(players).forEach(p => isMuted ? p?.mute?.() : p?.unMute?.());
+      showControls();
+    }
+    function clearAllVideos() {
+      Object.keys(players).forEach(id => removeVideo(id));
       showControls();
     }
 
-    document.getElementById("load-json").addEventListener("change", (e) => {
+    document.getElementById("search-input").addEventListener("input", doSearch);
+
+    function doSearch() {
+      const keyword = document.getElementById("search-input").value.trim().toLowerCase();
+      const container = document.getElementById("search-results");
+      container.innerHTML = "";
+
+      if (!keyword) return;
+
+      const results = [];
+      currentPlaylists.forEach((pl, plIndex) => {
+        pl.items.forEach((item, itemIndex) => {
+          if (item.title.toLowerCase().includes(keyword)) {
+            results.push({ ...item, playlistName: pl.playlist, plIndex, itemIndex });
+          }
+        });
+      });
+
+      if (results.length === 0) {
+        container.innerHTML = "<div style='padding:12px;color:#777'>無符合結果</div>";
+        return;
+      }
+
+      results.slice(0, 50).forEach(r => {
+        const div = document.createElement("div");
+        div.className = "search-item";
+        div.textContent = `[${r.playlistName}] ${r.title}`;
+        div.title = r.title;
+        div.onclick = () => addVideoToGrid(r.id, r.title);
+        container.appendChild(div);
+      });
+    }
+
+    function renderTabs() {
+      const tabButtons = document.getElementById("tab-buttons");
+      const tabContents = document.getElementById("tab-contents");
+      tabButtons.innerHTML = "";
+      tabContents.innerHTML = "";
+
+      if (currentPlaylists.length === 0) {
+        tabButtons.innerHTML = "<div style='padding:12px;color:#777'>尚未載入任何播放清單</div>";
+        return;
+      }
+
+      currentPlaylists.forEach((pl, index) => {
+        const tabWrapper = document.createElement("div");
+        tabWrapper.className = "tab-wrapper";
+
+        const tab = document.createElement("div");
+        tab.className = "tab";
+        tab.textContent = pl.playlist || `清單 ${index+1}`;
+        tab.dataset.index = index;
+        tab.onclick = () => switchTab(index);
+        tabWrapper.appendChild(tab);
+
+        const removeTabBtn = document.createElement("button");
+        removeTabBtn.className = "tab-remove";
+        removeTabBtn.textContent = "×";
+        removeTabBtn.onclick = (e) => {
+          e.stopPropagation();
+          currentPlaylists.splice(index, 1);
+          renderTabs();
+          if (currentTabIndex >= currentPlaylists.length) {
+            switchTab(currentPlaylists.length - 1);
+          }
+          showMessage("分頁已移除", "success");
+        };
+        tabWrapper.appendChild(removeTabBtn);
+
+        tabButtons.appendChild(tabWrapper);
+
+        const content = document.createElement("div");
+        content.className = "tab-content";
+        content.id = `tab-content-${index}`;
+
+        pl.items.forEach((item, itemIndex) => {
+          const itemDiv = document.createElement("div");
+          itemDiv.className = "playlist-item";
+
+          const titleSpan = document.createElement("span");
+          titleSpan.textContent = item.title;
+          titleSpan.style.flex = "1";
+          titleSpan.title = item.title;
+          titleSpan.onclick = () => addVideoToGrid(item.id, item.title);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "remove-item";
+          removeBtn.textContent = "×";
+          removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            pl.items.splice(itemIndex, 1);
+            renderTabs();
+            showMessage("項目已移除", "success");
+          };
+
+          itemDiv.appendChild(titleSpan);
+          itemDiv.appendChild(removeBtn);
+          content.appendChild(itemDiv);
+        });
+
+        tabContents.appendChild(content);
+      });
+
+      if (currentTabIndex < 0 && currentPlaylists.length > 0) {
+        switchTab(0);
+      } else if (currentTabIndex >= currentPlaylists.length) {
+        switchTab(currentPlaylists.length - 1);
+      } else if (currentTabIndex >= 0) {
+        switchTab(currentTabIndex);
+      }
+    }
+
+    function switchTab(index) {
+      currentTabIndex = parseInt(index);
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+      const activeTab = document.querySelector(`.tab[data-index="${index}"]`);
+      if (activeTab) activeTab.classList.add("active");
+      document.getElementById(`tab-content-${index}`)?.classList.add("active");
+    }
+
+    function showMessage(text, type = "success") {
+      const bar = document.getElementById("message-bar");
+      bar.textContent = text;
+      bar.className = `show ${type}`;
+      setTimeout(() => bar.classList.remove("show"), 2000);
+    }
+
+    function saveCurrentTab() {
+      if (currentTabIndex < 0 || currentTabIndex >= currentPlaylists.length) {
+        showMessage("請先選擇一個分頁", "error");
+        return;
+      }
+
+      const data = [currentPlaylists[currentTabIndex]];
+      downloadJson(data, `playlist_${currentPlaylists[currentTabIndex].playlist || "tab"}_${new Date().toISOString().slice(0,10)}.json`);
+      showMessage("此分頁已儲存為 JSON", "success");
+    }
+
+    function saveAllTabs() {
+      if (currentPlaylists.length === 0) {
+        showMessage("沒有可儲存的播放清單", "error");
+        return;
+      }
+      downloadJson(currentPlaylists, `all_playlists_${new Date().toISOString().slice(0,10)}.json`);
+      showMessage("所有分頁已儲存為 JSON", "success");
+    }
+
+    function downloadJson(data, filename) {
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function showAddVideoOverlay() {
+      if (currentTabIndex < 0) {
+        showMessage("請先選擇一個分頁", "error");
+        return;
+      }
+      document.getElementById("add-video-overlay").style.display = "flex";
+      document.getElementById("new-title").value = "";
+      document.getElementById("new-id").value = "";
+    }
+
+    function addVideoToCurrentTab() {
+      const title = document.getElementById("new-title").value.trim();
+      let input = document.getElementById("new-id").value.trim();
+
+      if (!title || !input) {
+        showMessage("標題與 ID/網址皆為必填", "error");
+        return;
+      }
+
+      let videoId = input;
+      if (input.includes("youtube.com") || input.includes("youtu.be")) {
+        const m = input.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+        videoId = m ? m[1] : "";
+      }
+
+      if (!videoId || videoId.length !== 11) {
+        showMessage("無法解析有效的 YouTube 影片 ID", "error");
+        return;
+      }
+
+      if (currentPlaylists[currentTabIndex].items.some(i => i.id === videoId)) {
+        showMessage("此影片 ID 已存在於目前分頁", "error");
+        return;
+      }
+
+      currentPlaylists[currentTabIndex].items.push({ title, id: videoId });
+      document.getElementById("add-video-overlay").style.display = "none";
+      renderTabs();
+      showMessage(`已加入：「${title}」`, "success");
+    }
+
+    document.getElementById("local-json-input").addEventListener("change", e => {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = event => {
         try {
           const data = JSON.parse(event.target.result);
-          currentPlaylist = data
-            .map(item => ({
-              title: item.title || "未命名",
-              id: item.id || extractId(item.url || ""),
-            }))
-            .filter(item => item.id);
-
-          renderPlaylist();
-          alert(`已載入 ${currentPlaylist.length} 個項目`);
-          showControls();
-        } catch (err) {
-          alert("JSON 格式錯誤：" + err.message);
+          addNewPlaylistGroup(data);
+          showMessage("本地檔案載入成功", "success");
+        } catch(err) {
+          showMessage("JSON 格式錯誤：" + err.message, "error");
         }
       };
       reader.readAsText(file);
     });
 
-    function savePlaylist() {
-      if (currentPlaylist.length === 0) return alert("沒有清單可儲存");
-      localStorage.setItem("ytCustomPlaylist", JSON.stringify(currentPlaylist));
-      alert("已儲存至瀏覽器");
-      showControls();
+    function loadLocalJson() {
+      document.getElementById("local-json-input").click();
     }
 
-    function clearPlaylist() {
-      if (!confirm("確定清除播放清單？")) return;
-      currentPlaylist = [];
-      localStorage.removeItem("ytCustomPlaylist");
-      renderPlaylist();
-      showControls();
+    async function loadJsonFromUrl() {
+      const url = prompt("請輸入 JSON 完整網址：", "https://raw.githubusercontent.com/alanfox2000software/ytcustomplayer/refs/heads/main/playlist.json");
+      if (!url) return;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        addNewPlaylistGroup(data);
+        showMessage("URL 載入成功", "success");
+      } catch(e) {
+        showMessage("載入失敗：" + e.message, "error");
+      }
     }
 
-    function extractId(url) {
-      const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
-      return m ? m[1] : "";
-    }
+    function addNewPlaylistGroup(data) {
+      let groups = [];
 
-    window.addEventListener("load", () => {
-      loadSavedPlaylist();
-    });
+      if (Array.isArray(data)) {
+        if (data[0]?.playlist && Array.isArray(data[0].items)) {
+          groups = data;
+        } else {
+          groups = [{
+            playlist: "新載入清單 " + new Date().toLocaleDateString(),
+            items: data.filter(i => i.id).map(i => ({title: i.title || "未命名", id: i.id}))
+          }];
+        }
+      }
+
+      if (groups.length === 0) {
+        showMessage("無有效資料", "error");
+        return;
+      }
+
+      currentPlaylists.push(...groups);
+      renderTabs();
+      showMessage(`已加入 ${groups.length} 個分頁`, "success");
+    }
   </script>
 </body>
 </html>
