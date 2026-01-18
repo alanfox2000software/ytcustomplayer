@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YT 多格播放器 - 進階版 (多分頁播放清單)</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
     body {
       font-family: Arial, Helvetica, sans-serif;
@@ -40,7 +44,10 @@
       transition: opacity 0.5s;
     }
 
-    #controls.hidden { opacity: 0; pointer-events: none; }
+    #controls.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
 
     button {
       padding: 8px 14px;
@@ -394,11 +401,15 @@
         <button class="close-overlay" onclick="document.getElementById('online-playlist-overlay').style.display='none'">×</button>
       </div>
 
-      <div style="margin-bottom:16px;">
-        <input type="text" id="online-search" placeholder="搜尋線上清單名稱..." />
+      <div id="online-repo-info" style="margin-bottom:12px; color:#aaa; font-size:0.9rem;"></div>
+
+      <div style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;">
+        <input type="text" id="online-search" placeholder="搜尋線上清單名稱..." style="flex:1;" />
+        <button onclick="showOnlinePlaylistOverlay()" class="small-btn">重新載入</button>
+        <button onclick="useOriginalRepo()" class="small-btn">使用原版儲存庫</button>
       </div>
 
-      <div id="online-files-list" style="max-height:50vh; overflow-y:auto;"></div>
+      <div id="online-files-list" style="max-height:45vh; overflow-y:auto;"></div>
 
       <div style="margin-top:24px; padding-top:16px; border-top:1px solid #444;">
         <h3 style="margin-bottom:12px;">手動加入單一影片</h3>
@@ -446,48 +457,51 @@
     let currentPlaylists = [];
     let currentTabIndex = -1;
 
-    // 自動偵測目前 GitHub Pages 網址基底，用於分享連結
-    function getPagesBaseUrl() {
-      const currentUrl = window.location.href;
-
-      // 匹配 GitHub 儲存庫網址模式
-      const githubMatch = currentUrl.match(/github\.com\/([^/]+)\/([^/]+)/i);
-
-      if (githubMatch && githubMatch.length === 3) {
-        const username = githubMatch[1];
-        const repo = githubMatch[2].split('#')[0].split('?')[0];
-        return `https://${username}.github.io/${repo}/`;
-      }
-
-      // 若無法偵測（本地測試等），使用預設 alanfox2000software 的 Pages
-      console.warn("無法偵測 GitHub Pages 網址，使用預設 alanfox2000software.github.io/ytcustomplayer/");
-      return "https://alanfox2000software.github.io/ytcustomplayer/";
-    }
-
-    // 自動偵測 GitHub API（用於載入線上清單）
+    // 自動偵測 GitHub 相關網址（修正雙 https 問題）
     function getGitHubRepoApiUrl() {
       const currentUrl = window.location.href;
       const githubMatch = currentUrl.match(/github\.com\/([^/]+)\/([^/]+)/i);
 
       if (githubMatch && githubMatch.length === 3) {
         const username = githubMatch[1];
-        const repo = githubMatch[2].split('#')[0].split('?')[0];
+        const repo = githubMatch[2].split('#')[0].split('?')[0].split('/')[0];
         return `https://api.github.com/repos/${username}/${repo}/git/trees/main?recursive=1`;
       }
 
       return "https://api.github.com/repos/alanfox2000software/ytcustomplayer/git/trees/main?recursive=1";
     }
 
-    const PAGES_BASE_URL = getPagesBaseUrl();
-    const GITHUB_TREE_URL = getGitHubRepoApiUrl();
-    const RAW_BASE = GITHUB_TREE_URL.replace(
-      /api\.github\.com\/repos\/([^/]+)\/([^/]+)\/.*/,
-      "https://raw.githubusercontent.com/$1/$2/main/"
-    );
+    function getRawBaseUrl() {
+      const apiUrl = getGitHubRepoApiUrl();
+      const match = apiUrl.match(/repos\/([^/]+)\/([^/]+)\//);
+      if (match) {
+        const username = match[1];
+        const repo = match[2];
+        return `https://raw.githubusercontent.com/${username}/${repo}/main/`;
+      }
+      return "https://raw.githubusercontent.com/alanfox2000software/ytcustomplayer/main/";
+    }
 
-    console.log("分享連結基底:", PAGES_BASE_URL);
-    console.log("API 網址:", GITHUB_TREE_URL);
-    console.log("RAW 基底:", RAW_BASE);
+    function getPagesBaseUrl() {
+      const currentUrl = window.location.href;
+      const githubMatch = currentUrl.match(/github\.com\/([^/]+)\/([^/]+)/i);
+
+      if (githubMatch && githubMatch.length === 3) {
+        const username = githubMatch[1];
+        const repo = githubMatch[2].split('#')[0].split('?')[0].split('/')[0];
+        return `https://${username}.github.io/${repo}/`;
+      }
+
+      return "https://alanfox2000software.github.io/ytcustomplayer/";
+    }
+
+    const GITHUB_TREE_URL = getGitHubRepoApiUrl();
+    const RAW_BASE = getRawBaseUrl();
+    const PAGES_BASE_URL = getPagesBaseUrl();
+
+    console.log("API:", GITHUB_TREE_URL);
+    console.log("RAW:", RAW_BASE);
+    console.log("Pages:", PAGES_BASE_URL);
 
     const controls = document.getElementById("controls");
     let hideTimer = null;
@@ -520,7 +534,6 @@
       loadVideosFromUrl();
     }
 
-    // 從網址參數載入影片
     function loadVideosFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const videosParam = params.get("videos");
@@ -534,7 +547,6 @@
       }
     }
 
-    // 複製目前所有影片的分享連結（使用動態 Pages 基底）
     function copyCurrentVideosUrl() {
       const videoIds = Object.keys(players);
       if (videoIds.length === 0) {
@@ -549,6 +561,148 @@
       }).catch(err => {
         showMessage("複製失敗：" + err.message, "error");
       });
+    }
+
+    async function showOnlinePlaylistOverlay() {
+      const container = document.getElementById("online-files-list");
+      const infoDiv = document.getElementById("online-repo-info");
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">正在載入線上播放清單...</div>';
+
+      document.getElementById("online-playlist-overlay").style.display = "flex";
+
+      const isOriginal = GITHUB_TREE_URL.includes("alanfox2000software");
+      infoDiv.innerHTML = `目前載入自：${isOriginal ? '原版儲存庫' : '您 Fork 的儲存庫'}<br>
+        <small style="color:#888;">API: ${GITHUB_TREE_URL.split('/repos/')[1] || '...'}</small>`;
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        const response = await fetch(GITHUB_TREE_URL, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'yt-multiviewer-browser'
+          },
+          mode: 'cors',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          let msg = `GitHub API 錯誤: ${response.status}`;
+          if (response.status === 403) msg += " (速率限制，請稍後再試或使用 VPN)";
+          if (response.status === 404) msg += " (找不到儲存庫或 main 分支)";
+          throw new Error(msg);
+        }
+
+        const data = await response.json();
+        const tree = data.tree || [];
+
+        const jsonFiles = tree
+          .filter(item => item.type === "blob" && item.path?.startsWith("playlist/") && item.path.endsWith(".json"))
+          .map(item => item.path.replace(/^playlist\//, ""));
+
+        container.innerHTML = "";
+
+        if (jsonFiles.length === 0) {
+          container.innerHTML = '<div style="padding:20px;color:#888;text-align:center;">目前 playlist 資料夾沒有 .json 檔案</div>';
+          return;
+        }
+
+        jsonFiles.sort().forEach(filename => {
+          const item = document.createElement("div");
+          item.className = "online-file-item";
+          item.textContent = filename;
+          item.style.cursor = "pointer";
+          item.addEventListener('click', () => loadOnlinePlaylist(filename));
+          container.appendChild(item);
+        });
+
+        document.getElementById("online-search").oninput = function() {
+          const keyword = this.value.trim().toLowerCase();
+          Array.from(container.children).forEach(el => {
+            el.style.display = el.textContent.toLowerCase().includes(keyword) ? "" : "none";
+          });
+        };
+
+      } catch (err) {
+        let msg = err.message || "載入失敗";
+        if (err.name === 'AbortError') msg = "載入超時（12秒）";
+        container.innerHTML = `
+          <div style="padding:20px; color:#ff6666; text-align:center;">
+            ${msg}<br>
+            <small>可嘗試點擊下方按鈕切換原版儲存庫</small>
+          </div>
+        `;
+        console.error("GitHub API 載入失敗:", err);
+      }
+    }
+
+    async function loadOnlinePlaylist(filename) {
+      // 確保 URL 乾淨無誤
+      let cleanUrl = `${RAW_BASE}playlist/${filename}`;
+      cleanUrl = cleanUrl.replace(/([^:]\/)\/+/g, "$1"); // 移除多餘斜線
+      cleanUrl = cleanUrl.replace(/^https?:\/+/, 'https://'); // 確保單一 protocol
+
+      console.log("嘗試載入 JSON:", cleanUrl);
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const res = await fetch(cleanUrl, {
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache',
+          redirect: 'follow',
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+        }
+
+        const text = await res.text();
+        console.log("JSON 原始內容前 100 字:", text.substring(0, 100));
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          throw new Error("JSON 解析失敗：" + parseErr.message);
+        }
+
+        addNewPlaylistGroup(data);
+        document.getElementById("online-playlist-overlay").style.display = "none";
+        showMessage(`成功載入：${filename}`, "success");
+
+      } catch (e) {
+        let msg = "載入失敗";
+        if (e.name === 'AbortError') msg = "載入超時（10秒）";
+        else if (e.message.includes("404")) msg = "找不到檔案（確認 playlist 資料夾與檔案是否存在）";
+        else if (e.message.includes("CORS")) msg = "CORS 錯誤（請確認網路環境允許 GitHub raw）";
+        else msg = e.message;
+
+        showMessage(`${msg}：${filename}`, "error");
+        console.error("載入 JSON 失敗:", e, "\nURL:", cleanUrl);
+      }
+    }
+
+    function useOriginalRepo() {
+      if (confirm("確定要切換回原版 alanfox2000software 儲存庫嗎？")) {
+        localStorage.setItem('forceOriginalRepo', 'true');
+        location.reload();
+      }
+    }
+
+    if (localStorage.getItem('forceOriginalRepo') === 'true') {
+      localStorage.removeItem('forceOriginalRepo');
+      showMessage("已切換回原版儲存庫，請重新點擊「從線上加入」", "success");
     }
 
     function addVideoToGrid(videoId, title = "") {
@@ -607,6 +761,22 @@
       showControls();
     }
 
+    function copyCurrentVideosUrl() {
+      const videoIds = Object.keys(players);
+      if (videoIds.length === 0) {
+        showMessage("目前沒有任何影片", "error");
+        return;
+      }
+
+      const shareUrl = `${PAGES_BASE_URL}?videos=${videoIds.join(",")}`;
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showMessage("已複製目前影片設定連結到剪貼簿", "success");
+      }).catch(err => {
+        showMessage("複製失敗：" + err.message, "error");
+      });
+    }
+
     document.getElementById("search-input").addEventListener("input", doSearch);
 
     function doSearch() {
@@ -638,101 +808,6 @@
         div.onclick = () => addVideoToGrid(r.id, r.title);
         container.appendChild(div);
       });
-    }
-
-    async function showOnlinePlaylistOverlay() {
-      const container = document.getElementById("online-files-list");
-      container.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;">正在從 GitHub 載入播放清單...</div>';
-
-      document.getElementById("online-playlist-overlay").style.display = "flex";
-
-      try {
-        const response = await fetch(GITHUB_TREE_URL);
-        if (!response.ok) throw new Error(`GitHub API 錯誤: ${response.status}`);
-
-        const data = await response.json();
-        const tree = data.tree || [];
-
-        const jsonFiles = tree
-          .filter(item => item.path.startsWith("playlist/") && item.path.endsWith(".json"))
-          .map(item => item.path.replace("playlist/", ""));
-
-        container.innerHTML = "";
-
-        if (jsonFiles.length === 0) {
-          container.innerHTML = '<div style="padding:20px;color:#888;text-align:center;">目前 playlist 資料夾沒有 .json 檔案</div>';
-          return;
-        }
-
-        jsonFiles.sort().forEach(filename => {
-          const item = document.createElement("div");
-          item.className = "online-file-item";
-          item.textContent = filename;
-          item.onclick = () => loadOnlinePlaylist(filename);
-          container.appendChild(item);
-        });
-
-        document.getElementById("online-search").oninput = function() {
-          const keyword = this.value.trim().toLowerCase();
-          Array.from(container.children).forEach(el => {
-            el.style.display = el.textContent.toLowerCase().includes(keyword) ? "" : "none";
-          });
-        };
-
-      } catch (err) {
-        container.innerHTML = `<div style="padding:20px;color:#ff6666;text-align:center;">載入失敗: ${err.message}</div>`;
-      }
-    }
-
-    async function loadOnlinePlaylist(filename) {
-      const url = `${RAW_BASE}playlist/${filename}`;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = await res.json();
-        addNewPlaylistGroup(data);
-        document.getElementById("online-playlist-overlay").style.display = "none";
-        showMessage(`已從線上加入：${filename}`, "success");
-      } catch(e) {
-        showMessage(`載入 ${filename} 失敗：${e.message}`, "error");
-      }
-    }
-
-    function addManualVideoToCurrentTab() {
-      const title = document.getElementById("manual-title").value.trim();
-      let input = document.getElementById("manual-id").value.trim();
-
-      if (!title || !input) {
-        showMessage("標題與 ID/網址皆為必填", "error");
-        return;
-      }
-
-      let videoId = input;
-      if (input.includes("youtube.com") || input.includes("youtu.be")) {
-        const m = input.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
-        videoId = m ? m[1] : "";
-      }
-
-      if (!videoId || videoId.length !== 11) {
-        showMessage("無法解析有效的 YouTube 影片 ID", "error");
-        return;
-      }
-
-      if (currentTabIndex < 0) {
-        showMessage("請先選擇一個分頁", "error");
-        return;
-      }
-
-      if (currentPlaylists[currentTabIndex].items.some(i => i.id === videoId)) {
-        showMessage("此影片 ID 已存在於目前分頁", "error");
-        return;
-      }
-
-      currentPlaylists[currentTabIndex].items.push({ title, id: videoId });
-      document.getElementById("online-playlist-overlay").style.display = "none";
-      renderTabs();
-      showMessage(`已加入：「${title}」`, "success");
     }
 
     function showNewTabOverlay() {
