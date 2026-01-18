@@ -51,17 +51,19 @@
 
     button {
       padding: 8px 14px;
-      background: #065fd4;
+      background: #a81c1c; /* Twilight 暗紅基底色 */
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.9rem;
-      transition: background 0.25s ease;
+      transition: all 0.25s ease;
     }
 
     button:hover {
-      background: #a81c1c; /* Twilight 風格暗紅 */
+      background: #c41e1e; /* hover 時稍微提亮 */
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(168,28,28,0.5);
     }
 
     #add-btn {
@@ -71,22 +73,23 @@
       width: 64px;
       height: 64px;
       border-radius: 50%;
-      background: #c00;
+      background: #a81c1c; /* 同樣改為暗紅 */
       color: white;
       font-size: 2.4rem;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      box-shadow: 0 4px 12px rgba(168,28,28,0.6);
       z-index: 200;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.25s ease, transform 0.2s;
+      transition: all 0.25s ease;
     }
 
     #add-btn:hover {
-      background: #a81c1c;
+      background: #c41e1e;
       transform: scale(1.1);
+      box-shadow: 0 8px 20px rgba(168,28,28,0.6);
     }
 
     #grid {
@@ -134,7 +137,7 @@
     .tab-remove:hover,
     .remove-item:hover,
     .close-overlay:hover {
-      background: #a81c1c; /* 與藍色按鈕 hover 一致的 Twilight 暗紅 */
+      background: #a81c1c;
       color: white;
       opacity: 1;
       transform: scale(1.1);
@@ -261,17 +264,19 @@
     .tab {
       padding: 10px 16px;
       cursor: pointer;
-      transition: 0.2s;
-      background: #065fd4; /* 分頁也使用藍色基底 */
+      transition: all 0.25s ease;
+      background: #a81c1c; /* 分頁標籤也改為暗紅 */
       color: white;
     }
 
     .tab.active {
-      background: #0848a3; /* 更深的藍表示啟動 */
+      background: #c41e1e; /* 啟動狀態更亮一點 */
+      box-shadow: inset 0 -3px 0 #ff3333;
     }
 
     .tab:hover {
-      background: #a81c1c; /* hover 變 Twilight 暗紅 */
+      background: #c41e1e;
+      transform: translateY(-1px);
     }
 
     .tab-content {
@@ -310,7 +315,7 @@
       bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(20,20,20,0.9); /* 非常接近背景的深灰 */
+      background: rgba(20,20,20,0.9);
       color: #cccccc;
       padding: 10px 20px;
       border-radius: 30px;
@@ -318,7 +323,7 @@
       display: none;
       opacity: 0;
       transition: opacity 0.4s ease;
-      font-size: 0.85rem; /* 字體更小一點 */
+      font-size: 0.85rem;
       max-width: 80%;
       text-align: center;
       border: 1px solid rgba(80,80,80,0.5);
