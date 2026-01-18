@@ -68,5 +68,6 @@ https://alanfox2000software.github.io/ytcustomplayer/?videos=dQw4w9WgXcQ,jNQXAC9
     ]
   }
 ]
+```
 
 可放置在儲存庫的 playlist/ 資料夾內，檔名任意（建議用英文或數字），副檔名必須是 .json。
