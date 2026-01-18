@@ -1,31 +1,46 @@
-# YouTube 多視窗播放器 | Multi-Window YouTube Player
+# YT 多格播放器 (YTCustomPlayer)
 
-一個讓你同時觀看多個 YouTube 影片的網頁應用程式。完美支援影片比較、多直播觀看，或是打造你專屬的多視窗觀看體驗。
+一個強大、輕量、支援多分頁與網址分享的 YouTube 多格同步播放器。
 
-A web application that allows you to watch multiple YouTube videos simultaneously. Perfect for video comparisons, watching multiple live streams, or creating your own multi-window viewing experience.
+可同時播放多個 YouTube 影片，支援自訂播放清單、線上載入、匯出/匯入、網址參數快速分享等功能。
 
-## 功能特色 | Features
 
-- 🎥 同時觀看多個 YouTube 影片
-- 📱 根據影片數量自動調整的響應式網格佈局
-- 🔊 預設自動播放但靜音（符合瀏覽器政策）
-- ▶️ 所有影片同步播放控制
-- 📋 一鍵複製分享連結
+## 特色功能
 
-- 🎥 Watch multiple YouTube videos simultaneously
-- 📱 Responsive grid layout that automatically adjusts based on the number of videos
-- 🔊 Auto-play with mute by default (compliant with browser policies)
-- ▶️ Synchronized playback control for all videos
-- 📋 One-click share link copying
+- 多格同步播放（可同時播放多個 YouTube 影片）
+- 支援多分頁播放清單管理
+- 從 GitHub 線上動態載入播放清單（支援原版與所有 Fork）
+- 支援網址參數快速載入影片組合  
+  範例：`?videos=dQw4w9WgXcQ,jNQXAC9IVRw,abc123xyz`
+- 一鍵「複製目前影片設定」分享連結
+- 支援本地 JSON 匯入/匯出
+- 深色現代化介面 + 美觀捲軸
+- 支援靜音/播放/暫停全域控制
 
-## 使用方式 | How to Use
+## 線上體驗
 
-### 網址格式 | URL Format
+- 原版：https://alanfox2000software.github.io/ytcustomplayer/
+- 你的 Fork：https://你的使用者名稱.github.io/ytcustomplayer/
 
-在網址後方加入 YouTube 影片 ID：
+（Fork 後自動部署到 GitHub Pages 即可擁有自己的版本，所有功能都會自動適配你的儲存庫）
 
-Add YouTube video IDs to the URL:
+## 快速開始
 
-?videos=VIDEO_ID1,VIDEO_ID2,VIDEO_ID3
+1. **直接使用**  
+   前往下列任一連結即可開始使用：
+   - https://alanfox2000software.github.io/ytcustomplayer/
+   - 或你自己 Fork 後的 GitHub Pages 網址
 
-Example: https://alanfox2000software.github.io/ytcustomplayer/?videos=dQw4w9WgXcQ,jNQXAC9IVRw
+2. **加入你自己的影片清單**  
+   - 點擊右下角「+」按鈕
+   - 選擇「從線上加入」 → 會自動載入目前儲存庫的 `playlist/` 資料夾內所有 `.json` 檔案
+   - 或「從本地加入」 → 上傳你自己的 JSON 播放清單
+
+3. **分享目前播放組合**  
+   - 播放你想要的影片組合
+   - 點擊「複製目前影片設定」
+   - 將連結傳給朋友，對方開啟即可看到完全相同的多格畫面！
+
+## 網址參數格式
+
+支援直接在網址後加上影片 ID 清單：
