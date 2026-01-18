@@ -51,7 +51,7 @@
 
     button {
       padding: 8px 14px;
-      background: #a81c1c; /* Twilight 暗紅基底色 */
+      background: #a81c1c;
       color: white;
       border: none;
       border-radius: 6px;
@@ -61,7 +61,7 @@
     }
 
     button:hover {
-      background: #c41e1e; /* hover 時稍微提亮 */
+      background: #c41e1e;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(168,28,28,0.5);
     }
@@ -73,7 +73,7 @@
       width: 64px;
       height: 64px;
       border-radius: 50%;
-      background: #a81c1c; /* 同樣改為暗紅 */
+      background: #a81c1c;
       color: white;
       font-size: 2.4rem;
       border: none;
@@ -265,18 +265,20 @@
       padding: 10px 16px;
       cursor: pointer;
       transition: all 0.25s ease;
-      background: #a81c1c; /* 分頁標籤也改為暗紅 */
-      color: white;
-    }
-
-    .tab.active {
-      background: #c41e1e; /* 啟動狀態更亮一點 */
-      box-shadow: inset 0 -3px 0 #ff3333;
+      background: #1a0f0f;
+      color: #999999;
     }
 
     .tab:hover {
-      background: #c41e1e;
+      background: #3a1a1a;
+      color: white;
       transform: translateY(-1px);
+    }
+
+    .tab.active {
+      background: #5c1a1a;
+      color: white;
+      box-shadow: inset 0 -3px 0 #8a1a1a;
     }
 
     .tab-content {
@@ -285,16 +287,32 @@
       overflow-y: auto;
       padding-right: 8px;
       scrollbar-width: thin;
+      scrollbar-color: #444 #181818;
     }
 
     .tab-content.active {
       display: block;
     }
 
-    .tab-content::-webkit-scrollbar { width: 8px; }
-    .tab-content::-webkit-scrollbar-track { background: #181818; border-radius: 4px; }
-    .tab-content::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; border: 2px solid #181818; }
-    .tab-content::-webkit-scrollbar-thumb:hover { background: #777; }
+    .tab-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .tab-content::-webkit-scrollbar-track {
+      background: #181818;
+      border-radius: 10px;
+      margin: 2px;
+    }
+
+    .tab-content::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 10px;
+      border: 2px solid #181818;
+    }
+
+    .tab-content::-webkit-scrollbar-thumb:hover {
+      background: #a81c1c;
+    }
 
     .load-buttons {
       display: flex;
@@ -397,7 +415,7 @@
     </div>
   </div>
 
-  <!-- 新增分頁輸入（置中） -->
+  <!-- 新增分頁輸入 -->
   <div id="new-tab-overlay" class="overlay" style="z-index:400;">
     <div id="new-tab-box">
       <h3>建立新分頁</h3>
@@ -409,7 +427,7 @@
     </div>
   </div>
 
-  <!-- 加入單一影片 overlay（置中） -->
+  <!-- 加入單一影片 overlay -->
   <div id="add-video-overlay" class="overlay" style="z-index:400;">
     <div id="add-video-box">
       <h3 style="margin-bottom:20px;">加入新影片到目前分頁</h3>
@@ -422,21 +440,45 @@
     </div>
   </div>
 
-  <!-- 瞬時訊息（低調深灰） -->
+  <!-- 瞬時訊息 -->
   <div id="message-bar"></div>
 
   <input type="file" id="local-json-input" accept=".json" style="display:none" />
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    // 以下為原有完整 JavaScript 內容（已包含所有功能）
     let players = {};
     let isMuted = true;
     let currentPlaylists = [];
     let currentTabIndex = -1;
 
-    const GITHUB_TREE_URL = "https://api.github.com/repos/alanfox2000software/ytcustomplayer/git/trees/main?recursive=1";
-    const RAW_BASE = "https://raw.githubusercontent.com/alanfox2000software/ytcustomplayer/main/";
+    // 自動偵測當前 GitHub 儲存庫，動態產生 API 網址
+    function getGitHubRepoApiUrl() {
+      const currentUrl = window.location.href;
+
+      // 匹配 GitHub 頁面網址模式
+      const githubMatch = currentUrl.match(/github\.com\/([^/]+)\/([^/]+)/i);
+
+      if (githubMatch && githubMatch.length === 3) {
+        const username = githubMatch[1];
+        const repo = githubMatch[2].split('#')[0].split('?')[0]; // 移除錨點與參數
+        return `https://api.github.com/repos/${username}/${repo}/git/trees/main?recursive=1`;
+      }
+
+      // 若無法偵測，使用預設 alanfox2000software/ytcustomplayer
+      console.warn("無法自動偵測 GitHub 儲存庫，使用預設 alanfox2000software/ytcustomplayer");
+      return "https://api.github.com/repos/alanfox2000software/ytcustomplayer/git/trees/main?recursive=1";
+    }
+
+    // 動態設定 API 網址與 RAW 基底
+    const GITHUB_TREE_URL = getGitHubRepoApiUrl();
+    const RAW_BASE = GITHUB_TREE_URL.replace(
+      /api\.github\.com\/repos\/([^/]+)\/([^/]+)\/.*/,
+      "https://raw.githubusercontent.com/$1/$2/main/"
+    );
+
+    console.log("自動偵測到的 API 網址:", GITHUB_TREE_URL);
+    console.log("自動偵測到的 RAW 基底網址:", RAW_BASE);
 
     const controls = document.getElementById("controls");
     let hideTimer = null;
